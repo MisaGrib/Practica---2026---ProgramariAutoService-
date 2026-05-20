@@ -1,6 +1,5 @@
 CREATE DATABASE AutoServiceAppointments
-
-GO
+GO 
 
 USE AutoServiceAppointments
 
@@ -62,14 +61,21 @@ CREATE TABLE Services(
 
 CREATE TABLE Appointments(
     Id INT IDENTITY(1,1) PRIMARY KEY,
+
+    AppointmentCode NVARCHAR(50) UNIQUE NOT NULL,
+
     CustomerId INT NOT NULL,
     VehicleId INT NOT NULL,
     MechanicId INT NOT NULL,
     ServiceId INT NOT NULL,
+
     ScheduledDate DATETIME NOT NULL,
+
     ProblemDescription NVARCHAR(MAX) NULL,
+
     Status NVARCHAR(50)
     CHECK (Status IN ('Programat', 'În progres', 'Complet', 'Anulat')) NOT NULL,
+
     CreatedAt DATETIME NOT NULL,
 
     FOREIGN KEY (CustomerId) REFERENCES Customers(Id),
