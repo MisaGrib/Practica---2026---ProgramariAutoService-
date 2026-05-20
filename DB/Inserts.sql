@@ -15,7 +15,7 @@ SELECT * FROM Roles
  go 
 
 -- USERS
-INSERT INTO Users(Email, Password, RoleId)
+INSERT INTO Users(Email, PasswordHash, RoleId)
 VALUES
 ('admin@autoservice.md', 'admin123', 1),
 

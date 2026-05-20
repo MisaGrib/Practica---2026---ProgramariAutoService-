@@ -13,11 +13,21 @@ CREATE TABLE Roles (
 CREATE TABLE Users(
     Id INT IDENTITY(1,1) PRIMARY KEY,
     Email NVARCHAR(100) UNIQUE NOT NULL,
-    Password NVARCHAR(255) NOT NULL,
+    PasswordHash NVARCHAR(255) NOT NULL,
     RoleId INT NOT NULL,
 
     FOREIGN KEY (RoleId) REFERENCES Roles(Id)
 );
+
+
+UPDATE Users
+SET CreatedAt = GETDATE()
+WHERE CreatedAt IS NULL;
+
+ALTER TABLE Users
+ALTER COLUMN CreatedAt DATETIME NOT NULL;
+
+ALTER TABLE Users ADD IsActive BIT NOT NULL DEFAULT 1
 
 CREATE TABLE Customers(
     Id INT IDENTITY(1,1) PRIMARY KEY,
@@ -83,6 +93,13 @@ CREATE TABLE Appointments(
     FOREIGN KEY (MechanicId) REFERENCES Mechanics(Id),
     FOREIGN KEY (ServiceId) REFERENCES Services(Id)
 );
+
+ALTER TABLE Appointments
+ADD UpdatedAt DATETIME NULL;
+
+ALTER TABLE Appointments
+ADD CONSTRAINT UQ_Appointments_Mechanic_ScheduledDate
+UNIQUE (MechanicId, ScheduledDate);
 
 CREATE TABLE Payments(
     Id INT IDENTITY(1,1) PRIMARY KEY,

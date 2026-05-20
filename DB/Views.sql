@@ -69,14 +69,18 @@ SELECT  a.Id,
         CONCAT(c.FirstName, ' ', c.LastName) AS Customer,
         v.LicensePlate, 
         CONCAT(m.FirstName, ' ', m.LastName) AS Mechanic,
+        s.Name AS ServiceName,
+        s.Price AS ServicePrice,
         a.ScheduledDate,
         a.ProblemDescription,
         a.Status,
-        a.CreatedAt
-        FROM Appointments a
-        JOIN Customers c ON a.CustomerId = c.Id
-        JOIN Vehicles v on a.VehicleId = v.Id
-        JOIN Mechanics m ON a.MechanicId = m.Id
+        a.CreatedAt,
+        a.UpdatedAt
+FROM Appointments a
+JOIN Customers c ON a.CustomerId = c.Id
+JOIN Vehicles v ON a.VehicleId = v.Id
+JOIN Mechanics m ON a.MechanicId = m.Id
+JOIN Services s ON a.ServiceId = s.Id;
 
 GO
 
