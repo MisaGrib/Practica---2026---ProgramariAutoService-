@@ -94,3 +94,4 @@ CREATE TABLE Payments(
 
     FOREIGN KEY (AppointmentId) REFERENCES Appointments(Id)
 );
+

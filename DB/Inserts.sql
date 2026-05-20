@@ -9,6 +9,10 @@ VALUES
 ('Client'),
 ('Mecanic');
 
+GO
+
+SELECT * FROM Roles
+ go 
 
 -- USERS
 INSERT INTO Users(Email, Password, RoleId)
@@ -25,6 +29,7 @@ VALUES
 ('victor.topala@service.md', 'mech123', 3),
 ('dorin.spinu@service.md', 'mech123', 3);
 
+GO
 
 -- CUSTOMERS
 INSERT INTO Customers(FirstName, LastName, Phone, Email, UserId)
@@ -35,6 +40,7 @@ VALUES
 ('Sergiu', 'Cojocaru', '069444444', 'sergiu.cojocaru@gmail.com', 5),
 ('Ana', 'Munteanu', '069555555', 'ana.munteanu@gmail.com', 6);
 
+GO
 
 -- MECHANICS
 INSERT INTO Mechanics(FirstName, LastName, Phone, Email, UserId)
@@ -43,6 +49,7 @@ VALUES
 ('Victor', 'Topala', '068222222', 'victor.topala@service.md', 8),
 ('Dorin', 'Spinu', '068333333', 'dorin.spinu@service.md', 9);
 
+GO
 
 -- VEHICLES
 INSERT INTO Vehicles(LicensePlate, Brand, Model, Series, CustomerId)
@@ -56,6 +63,7 @@ VALUES
 ('BL GG 007', 'Dacia', 'Duster', '2021', 2),
 ('BL HH 008', 'Ford', 'Focus', 'MK3', 3);
 
+GO
 
 -- SERVICES
 INSERT INTO Services(Name, Description, Price)
@@ -68,6 +76,7 @@ VALUES
 ('Verificare baterie', 'Testarea bateriei auto', 300),
 ('Revizie tehnica', 'Inspectie tehnica generala', 2000);
 
+GO
 
 INSERT INTO Appointments
 (AppointmentCode, CustomerId, VehicleId, MechanicId, ServiceId, ScheduledDate, ProblemDescription, Status, CreatedAt)
@@ -88,9 +97,15 @@ VALUES
 
 ('APP-20260603-008', 3, 8, 3, 1, '2026-06-03 15:30:00', 'Schimb ulei urgent', 'Programat', GETDATE());
 
+GO
+
 INSERT INTO Payments
 (AppointmentId, PaymentDate, PaymentType, Amount)
 VALUES
 (4, '2026-05-28 16:00:00', 'Card', 3500.00),
 
 (5, '2026-05-29 17:30:00', 'Numerar', 1500.00);
+
+GO
+
+use master

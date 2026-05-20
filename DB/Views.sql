@@ -60,7 +60,6 @@ SELECT Id, Name, Description, Price FROM Services
 GO
 
 SELECT * FROM SelectServices
-
 GO 
 
 CREATE VIEW SelectAppointments
@@ -95,4 +94,4 @@ GO
 SELECT * FROM SelectPayments
 
 
-        
+        use master
