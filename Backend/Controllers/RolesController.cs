@@ -74,7 +74,7 @@ public class RolesController : ControllerBase
 
         if (!isSucces)
         {
-            return NotFound($"Rolul cu id-ul{id} nu a fost găsit");
+            return NotFound($"Rolul nu a fost găsit");
         }
 
         return NoContent();
@@ -87,7 +87,7 @@ public class RolesController : ControllerBase
 
         if (!isDeleted)
         {
-            return NotFound($"Rolul cu id-ul{id} nu a fost găsit");
+            return NotFound($"Rolul nu a fost găsit");
         }
 
         return NoContent();

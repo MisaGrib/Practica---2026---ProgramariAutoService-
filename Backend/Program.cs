@@ -17,7 +17,8 @@ builder.Services.AddDbContext<AutoServiceAppointmentsContext>(options =>
 
 builder.Services.AddScoped<IRoleService, RoleService>();
 builder.Services.AddScoped<IServicesService, ServicesService>();
-
+builder.Services.AddScoped<ICustomerService, CustomerService>();
+builder.Services.AddScoped<IMechanicService, MechanicService>();
 var app = builder.Build();
 
 
