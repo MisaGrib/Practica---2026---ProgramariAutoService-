@@ -70,7 +70,7 @@ public class AppointmentsService : IAppointmentsService
         int nrAppointmentsDay = await _context.Appointments.CountAsync(s => s.CreatedAt.Date == DateTime.Now.Date) + 1;
 
 
-        code = $"App-{DateTime.Now:yyyyMMdd}-{nrAppointmentsDay}";
+        code = $"APP-{DateTime.Now:yyyyMMdd}-{nrAppointmentsDay:D3}";
 
         return code;
     
