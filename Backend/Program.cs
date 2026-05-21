@@ -20,6 +20,7 @@ builder.Services.AddScoped<IServicesService, ServicesService>();
 builder.Services.AddScoped<ICustomerService, CustomerService>();
 builder.Services.AddScoped<IMechanicService, MechanicService>();
 builder.Services.AddScoped<IVehiclesService, VehicleService>();
+builder.Services.AddScoped<IAppointmentsService, AppointmentsService>();
 var app = builder.Build();
 
 
