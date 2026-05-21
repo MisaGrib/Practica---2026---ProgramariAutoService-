@@ -24,27 +24,27 @@ public class RolesController : ControllerBase
      [HttpGet("{id}")]
     public async Task<IActionResult> GetRoleById(int id)
     {
-        var roles = await _roleService.GetRoleByIdAsync(id);
+        var role = await _roleService.GetRoleByIdAsync(id);
 
-        if (roles == null)
+        if (role == null)
         {
             return NotFound($"Nu pot fi găsite datele pentru rolul cu id-ul: {id}");
         }
 
-        return Ok(roles);
+        return Ok(role);
     }
 
     [HttpGet("name/{name}")]
     public async Task<IActionResult> GetRoleByName(string name)
     {
-        var roles = await _roleService.GetRoleByNameAsync(name);
+        var role = await _roleService.GetRoleByNameAsync(name);
 
-        if (roles == null)
+        if (role == null)
         {
             return NotFound($"Nu pot fi găsite datele pentru rolul cu numele: {name}");
         }
 
-        return Ok(roles);
+        return Ok(role);
     }
 
     [HttpPost]
