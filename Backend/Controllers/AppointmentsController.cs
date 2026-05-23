@@ -32,10 +32,22 @@ public class AppointmentsController : ControllerBase
         return Ok(appointment);
     }
 
+    [HttpGet("details")]
+    public async Task<IActionResult> GetAllDetails()
+    {
+        var appointments = await _appointmentsService.GetAllAppointmentsDetailsAsync();
+
+        if(appointments == null)
+        {
+            return NotFound("Nu pot fi găsite date pentru programări.");
+        }
+        return Ok(appointments);
+    }
+
     [HttpGet("code/{code}")]
     public async Task<IActionResult> GetByCode(string code)
     {
-        var appointment = await _appointmentsService.GetAppointmentByCodeAsync(code);
+        var appointment = await _appointmentsService.GetAppointmentDetailsByCodeAsync(code);
         if (appointment == null)
         {
             return NotFound($"Nu pot fi găsite datele pentru programarea cu codul: {code}");
@@ -43,56 +55,55 @@ public class AppointmentsController : ControllerBase
         return Ok(appointment);
     }
 
-    [HttpGet("customer/{customerId}")]
-    public async Task<IActionResult> GetByCustomerId(int customerId)
+    [HttpGet("customer/{customerName}")]
+    public async Task<IActionResult> GetByCustomerName(string customerName)
     {
-        var appointments = await _appointmentsService.GetAppointmentsByCustomerIdAsync(customerId);
+        var appointments = await _appointmentsService.GetAppointmentsDetailsByCustomerNameAsync(customerName);
 
        if (appointments == null || !appointments.Any())
         {
-            return NotFound($"Nu pot fi găsite programări pentru clientul cu id-ul: {customerId}");
+            return NotFound($"Nu pot fi găsite programări pentru clientul cu numele: {customerName}");
         }
 
         return Ok(appointments);
     }
 
-    [HttpGet("vehicles/{vehicleId}")]
-    public async Task<IActionResult> GetByVehicleId(int vehicleId)
+    [HttpGet("vehicles/{LicensePlate}")]
+    public async Task<IActionResult> GetByVehicleLicensePlate(string LicensePlate)
     {
-        var appointments = await _appointmentsService.GetAppointmentsByVehicleIdAsync(vehicleId);
+        var appointments = await _appointmentsService.GetAppointmentsDetailsByVehicleLicensePlateAsync(LicensePlate);
         if (appointments == null || !appointments.Any())
         {
-            return NotFound($"Nu pot fi găsite programări pentru vehiculul cu id-ul: {vehicleId}");
+            return NotFound($"Nu pot fi găsite programări pentru vehiculul cu numărul de înmatriculare: {LicensePlate}");
         }
         return Ok(appointments);
     }
 
-    [HttpGet("mechanics/{mechanicId}")]
-    
-    public async Task<IActionResult> GetByMechanicId(int mechanicId)
+    [HttpGet("mechanics/{mechanicName}")]
+    public async Task<IActionResult> GetByMechanicName(string mechanicName)
     {
-        var appointments = await _appointmentsService.GetAppointmentsByMechanicIdAsync(mechanicId);
+        var appointments = await _appointmentsService.GetAppointmentsDetailsByMechanicNameAsync(mechanicName);
         if (appointments == null || !appointments.Any())
         {
-            return NotFound($"Nu pot fi găsite programări pentru mecanicul cu id-ul: {mechanicId}");
+            return NotFound($"Nu pot fi găsite programări pentru mecanicul cu numele: {mechanicName}");
         }
         return Ok(appointments);
     }
 
-    [HttpGet("services/{serviceId}")]
-    public async Task<IActionResult> GetByServiceId(int serviceId)
+    [HttpGet("services/{serviceName}")]
+    public async Task<IActionResult> GetByServiceName(string serviceName)
     {
-        var appointments = await _appointmentsService.GetAppointmentsByServiceIdAsync(serviceId);
+        var appointments = await _appointmentsService.GetAppointmentsDetailsByServiceNameAsync(serviceName);
         if (appointments == null || !appointments.Any())
         {
-            return NotFound($"Nu pot fi găsite programări pentru serviciul cu id-ul: {serviceId}");
+            return NotFound($"Nu pot fi găsite programări pentru serviciul cu numele: {serviceName}");
         }
         return Ok(appointments);
     }
     [HttpGet("scheduledDate/{scheduledDate}")]
     public async Task<IActionResult> GetByScheduledDate(DateTime scheduledDate)
     {
-        var appointments = await _appointmentsService.GetAppointmentsByScheduledDateAsync(scheduledDate);
+        var appointments = await _appointmentsService.GetAppointmentsDetailsByScheduledDateAsync(scheduledDate);
         if (appointments == null || !appointments.Any())
         {
             return NotFound($"Nu pot fi găsite programări pentru data programării: {scheduledDate.ToShortDateString()}");
@@ -103,7 +114,7 @@ public class AppointmentsController : ControllerBase
     [HttpGet("status/{status}")]
     public async Task<IActionResult> GetByStatus(string status)
     {
-        var appointments = await _appointmentsService.GetAppointmentsByStatusAsync(status);
+        var appointments = await _appointmentsService.GetAppointmentsDetailsByStatusAsync(status);
         if (appointments == null || !appointments.Any())
         {
             return NotFound($"Nu pot fi găsite programări pentru statusul: {status}");

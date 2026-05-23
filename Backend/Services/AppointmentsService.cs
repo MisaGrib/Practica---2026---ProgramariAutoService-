@@ -27,39 +27,44 @@ public class AppointmentsService : IAppointmentsService
         return await _context.Appointments.FindAsync(id);
     }
 
-    public async Task<Appointment?> GetAppointmentByCodeAsync(string code)
+    public async Task<IEnumerable<SelectAppointment>> GetAllAppointmentsDetailsAsync()
     {
-        return await _context.Appointments.FirstOrDefaultAsync(a => a.AppointmentCode == code);
+        return await _context.SelectAppointments.ToListAsync();
     }
 
-    public async Task<IEnumerable<Appointment>> GetAppointmentsByCustomerIdAsync(int customerId)
+    public async Task<SelectAppointment?> GetAppointmentDetailsByCodeAsync(string code)
     {
-        return await _context.Appointments.Where(a => a.CustomerId == customerId).ToListAsync();
+        return await _context.SelectAppointments.FirstOrDefaultAsync(a => a.AppointmentCode == code);
     }
 
-    public async Task<IEnumerable<Appointment>> GetAppointmentsByVehicleIdAsync(int vehicleId)
+    public async Task<IEnumerable<SelectAppointment>> GetAppointmentsDetailsByCustomerNameAsync(string customerName)
     {
-        return await _context.Appointments.Where(a => a.VehicleId == vehicleId).ToListAsync();
+        return await _context.SelectAppointments.Where(a => a.Customer == customerName).ToListAsync();
     }
 
-    public async Task<IEnumerable<Appointment>> GetAppointmentsByMechanicIdAsync(int mechanicId)
+    public async Task<IEnumerable<SelectAppointment>> GetAppointmentsDetailsByVehicleLicensePlateAsync(string licensePlate)
     {
-        return await _context.Appointments.Where(a => a.MechanicId == mechanicId).ToListAsync();
+        return await _context.SelectAppointments.Where(a => a.LicensePlate == licensePlate).ToListAsync();
     }
 
-    public async Task<IEnumerable<Appointment>> GetAppointmentsByServiceIdAsync(int serviceId)
+    public async Task<IEnumerable<SelectAppointment>> GetAppointmentsDetailsByMechanicNameAsync(string mechanicName)
     {
-        return await _context.Appointments.Where(a => a.ServiceId == serviceId).ToListAsync();
+        return await _context.SelectAppointments.Where(a => a.Mechanic == mechanicName).ToListAsync();
     }
 
-    public async Task<IEnumerable<Appointment>> GetAppointmentsByScheduledDateAsync(DateTime scheduledDate)
+    public async Task<IEnumerable<SelectAppointment>> GetAppointmentsDetailsByServiceNameAsync(string serviceName)
     {
-        return await _context.Appointments.Where(a => a.ScheduledDate.Date == scheduledDate.Date).ToListAsync();
+        return await _context.SelectAppointments.Where(a => a.ServiceName == serviceName).ToListAsync();
     }
 
-    public async Task<IEnumerable<Appointment>> GetAppointmentsByStatusAsync(string status)
+    public async Task<IEnumerable<SelectAppointment>> GetAppointmentsDetailsByScheduledDateAsync(DateTime scheduledDate)
     {
-        return await _context.Appointments.Where(a => a.Status == status).ToListAsync();
+        return await _context.SelectAppointments.Where(a => a.ScheduledDate.Date == scheduledDate.Date).ToListAsync();
+    }
+
+    public async Task<IEnumerable<SelectAppointment>> GetAppointmentsDetailsByStatusAsync(string status)
+    {
+        return await _context.SelectAppointments.Where(a => a.Status == status).ToListAsync();
     }
 
 
