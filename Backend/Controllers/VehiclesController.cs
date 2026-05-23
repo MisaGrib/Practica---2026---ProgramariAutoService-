@@ -63,7 +63,7 @@ public class VehiclesController : ControllerBase
     {
         var vehicle = await _vehicleService.GetVehicleByCustomerNameAsync(customerName);
 
-        if (vehicle == null)
+        if (vehicle == null || !vehicle.Any())
         {
             return NotFound($"Nu pot fi găsite datele pentru vehiculul cu numele clientului: {customerName}");
         }

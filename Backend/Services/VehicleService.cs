@@ -37,9 +37,9 @@ public class VehicleService : IVehiclesService
         return await _context.SelectVehicles.FirstOrDefaultAsync(v => v.LicensePlate == licensePlate);
     }
 
-    public async Task<SelectVehicle?> GetVehicleByCustomerNameAsync(string customerName)
+    public async Task<IEnumerable<SelectVehicle>> GetVehicleByCustomerNameAsync(string customerName)
     {
-        return await _context.SelectVehicles.FirstOrDefaultAsync(v => v.Customer == customerName);
+        return await _context.SelectVehicles.Where(v => v.Customer == customerName).ToListAsync();
     }
 
     public async Task<Vehicle> CreateVehicleAsync(Vehicle vehicle)
