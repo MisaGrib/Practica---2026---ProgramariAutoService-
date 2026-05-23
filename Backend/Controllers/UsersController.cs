@@ -37,17 +37,37 @@ public class UsersController : ControllerBase
         return Ok(user);
     }
 
-    [HttpGet("email/{email}")]
-    public async Task<IActionResult> GetUserByEmail(string email)
+    [HttpGet("details")]
+    public async Task<IActionResult> GetAllUsersDetails()
     {
-        var user = await _userService.GetUserByEmailAsync(email);
+        var users = await _userService.GetAllUsersDetailsAsync();
+        return Ok(users);
+    }
+
+    [HttpGet("email/{email}")]
+    public async Task<IActionResult> GetUserDeByEmail(string email)
+    {
+        var user = await _userService.GetUserDetailsByEmailAsync(email);
 
         if (user == null)
         {
-            return NotFound();
+            return NotFound($"Utilizator cu email '{email}' nu a fost găsit.");
         }
 
         return Ok(user);
+    }
+
+    [HttpGet("role/{roleName}")]
+    public async Task<IActionResult> GetUsersByRoleName(string roleName)
+    {
+        var users = await _userService.GetUsersByRoleNameAsync(roleName);
+
+        if (users == null || !users.Any())
+        {
+            return NotFound($"Nu au fost găsiți utilizatori cu rolul '{roleName}'.");
+        }
+
+        return Ok(users);
     }
 
     [HttpPost]

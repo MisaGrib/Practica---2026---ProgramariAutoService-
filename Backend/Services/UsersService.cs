@@ -24,9 +24,19 @@ public class UsersService : IUserService
         return await _context.Users.FindAsync(id);
     }
 
-    public async Task<User?> GetUserByEmailAsync(string email)
+    public async Task<IEnumerable<SelectUser>> GetAllUsersDetailsAsync()
     {
-        return await _context.Users.FirstOrDefaultAsync(u => u.Email == email);
+       return await _context.SelectUsers.ToListAsync();
+    }
+
+    public async Task<SelectUser?> GetUserDetailsByEmailAsync(string email)
+    {
+        return await _context.SelectUsers.FirstOrDefaultAsync(u => u.Email == email);
+    }
+
+    public async Task<IEnumerable<SelectUser>> GetUsersByRoleNameAsync(string roleName)
+    {
+        return await _context.SelectUsers.Where(u => u.Name == roleName).ToListAsync();
     }
 
     public async Task<User> CreateUserAsync(User user)
