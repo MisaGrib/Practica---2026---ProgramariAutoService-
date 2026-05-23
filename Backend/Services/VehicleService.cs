@@ -27,14 +27,19 @@ public class VehicleService : IVehiclesService
         return await _context.Vehicles.FindAsync(id);
     }
 
-    public async Task<Vehicle?> GetVehicleByLicensePlateAsync(string licensePlate)
+    public async Task<IEnumerable<SelectVehicle>> GetAllVehiclesDetailsAsync()
     {
-        return await _context.Vehicles.FirstOrDefaultAsync(v => v.LicensePlate == licensePlate);
+        return await _context.SelectVehicles.ToListAsync();
     }
 
-    public async Task<Vehicle?> GetVehicleByCustomerIdAsync(int customerId)
+    public async Task<SelectVehicle?> GetVehicleByLicensePlateAsync(string licensePlate)
     {
-        return await _context.Vehicles.FirstOrDefaultAsync(v => v.CustomerId == customerId);
+        return await _context.SelectVehicles.FirstOrDefaultAsync(v => v.LicensePlate == licensePlate);
+    }
+
+    public async Task<SelectVehicle?> GetVehicleByCustomerNameAsync(string customerName)
+    {
+        return await _context.SelectVehicles.FirstOrDefaultAsync(v => v.Customer == customerName);
     }
 
     public async Task<Vehicle> CreateVehicleAsync(Vehicle vehicle)

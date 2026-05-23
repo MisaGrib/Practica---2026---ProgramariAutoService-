@@ -34,6 +34,17 @@ public class VehiclesController : ControllerBase
         return Ok(vehicle);
     }
 
+    [HttpGet("details")]
+    public async Task<IActionResult> GetAllVehiclesDetails()
+    {
+        var vehicles = await _vehicleService.GetAllVehiclesDetailsAsync();
+        if (vehicles == null || !vehicles.Any())
+        {
+            return NotFound("Nu pot fi găsite datele pentru vehicule.");
+        }
+        return Ok(vehicles);
+    }
+
     [HttpGet("licenseplate/{licensePlate}")]
     public async Task<IActionResult> GetVehicleByLicensePlate(string licensePlate)
     {
@@ -47,14 +58,14 @@ public class VehiclesController : ControllerBase
         return Ok(vehicle);
     }
 
-    [HttpGet("customer/{customerId}")]
-    public async Task<IActionResult> GetVehicleByCustomerId(int customerId)
+    [HttpGet("customer/{customerName}")]
+    public async Task<IActionResult> GetVehicleByCustomerName(string customerName)
     {
-        var vehicle = await _vehicleService.GetVehicleByCustomerIdAsync(customerId);
+        var vehicle = await _vehicleService.GetVehicleByCustomerNameAsync(customerName);
 
         if (vehicle == null)
         {
-            return NotFound($"Nu pot fi găsite datele pentru vehiculul cu id-ul clientului: {customerId}");
+            return NotFound($"Nu pot fi găsite datele pentru vehiculul cu numele clientului: {customerName}");
         }
 
         return Ok(vehicle);
