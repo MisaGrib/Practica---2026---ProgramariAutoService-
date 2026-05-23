@@ -24,20 +24,24 @@ public class PaymentService : IPaymentService
         return await _context.Payments.FindAsync(id);
     }
 
-    public async Task<Payment?> GetPaymentByAppointmentIdAsync(int appointmentId)
+    public async Task<IEnumerable<SelectPayment>> GetAllSelectPaymetsDetailsAsync()
     {
-        return await _context.Payments.FirstOrDefaultAsync(p => p.AppointmentId == appointmentId);
+        return await _context.SelectPayments.ToListAsync();
     }
 
-    public async Task<IEnumerable<Payment>> GetPaymentsByDateAsync(DateTime paymentDate)
+    public async Task<SelectPayment?> GetPaymentDetailsByAppointmentCodeAsync(string appointmentCode)
     {
-        return await _context.Payments.Where(p => p.PaymentDate.Date == paymentDate.Date).ToListAsync();
-    
+        return await _context.SelectPayments.FirstOrDefaultAsync(sp => sp.AppointmentCode == appointmentCode);
     }
 
-    public async Task<IEnumerable<Payment>> GetPaymentsByTypeAsync(string paymentType)
+    public async Task<IEnumerable<SelectPayment>> GetPaymentsDetailsByDateAsync(DateTime paymentDate)
     {
-        return await _context.Payments.Where(p => p.PaymentType == paymentType).ToListAsync();
+        return await _context.SelectPayments.Where(sp => sp.PaymentDate.Date == paymentDate.Date).ToListAsync();
+    }
+
+    public async Task<IEnumerable<SelectPayment>> GetPaymentsDetailsByTypeAsync(string paymentType)
+    {
+        return await _context.SelectPayments.Where(sp => sp.PaymentType == paymentType).ToListAsync();
     }
 
     public async Task<Payment> CreatePaymentAsync(Payment payment)

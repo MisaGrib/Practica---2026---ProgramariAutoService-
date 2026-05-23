@@ -34,23 +34,30 @@ public class PaymentsController : ControllerBase
         return Ok(payment);
     }
 
-    [HttpGet("appointment/{appointmentId}")]
-    public async Task<IActionResult> GetPaymentByAppoimentId(int appointmentId)
+    [HttpGet("details")]
+    public async Task<IActionResult> GetAllSelectPaymentsDetails()
     {
-        var payment = await _paymentService.GetPaymentByAppointmentIdAsync(appointmentId);
+        var paymentsDetails = await _paymentService.GetAllSelectPaymetsDetailsAsync();
+        return Ok(paymentsDetails);
+    }
 
-        if (payment == null)
+    [HttpGet("appointment/{appointmentCode}")]
+    public async Task<IActionResult> GetPaymentDetailsByAppointmentCode(string appointmentCode)
+    {
+        var paymentDetails = await _paymentService.GetPaymentDetailsByAppointmentCodeAsync(appointmentCode);
+
+        if (paymentDetails == null)
         {
-            return NotFound($"Nu pot fi găsite datele pentru plata cu id-ul programării: {appointmentId}");
+            return NotFound($"Nu pot fi găsite datele pentru plata cu id-ul programării: {appointmentCode}");
         }
 
-        return Ok(payment);
+        return Ok(paymentDetails);
     }
 
     [HttpGet("date/{paymentDate}")]
     public async Task<IActionResult> GetPaymentsByDate(DateTime paymentDate)
     {
-        var payments = await _paymentService.GetPaymentsByDateAsync(paymentDate);
+        var payments = await _paymentService.GetPaymentsDetailsByDateAsync(paymentDate);
 
         return Ok(payments);
     }
@@ -58,7 +65,7 @@ public class PaymentsController : ControllerBase
     [HttpGet("type/{paymentType}")]
     public async Task<IActionResult> GetPaymentsByType(string paymentType)
     {
-        var payments = await _paymentService.GetPaymentsByTypeAsync(paymentType);
+        var payments = await _paymentService.GetPaymentsDetailsByTypeAsync(paymentType);
 
         return Ok(payments);
     }

@@ -6,9 +6,10 @@ public interface IPaymentService
 {
     Task<IEnumerable<Payment>> GetAllPaymentsAsync();
     Task<Payment?> GetPaymentByIdAsync(int id);
-    Task<Payment?> GetPaymentByAppointmentIdAsync(int appointmentId);
-    Task<IEnumerable<Payment>> GetPaymentsByDateAsync(DateTime paymentDate);
-    Task<IEnumerable<Payment>> GetPaymentsByTypeAsync(string paymentType);
+    Task<IEnumerable<SelectPayment>> GetAllSelectPaymetsDetailsAsync(); 
+    Task<SelectPayment?> GetPaymentDetailsByAppointmentCodeAsync(string appointmentCode);
+    Task<IEnumerable<SelectPayment>> GetPaymentsDetailsByDateAsync(DateTime paymentDate);
+    Task<IEnumerable<SelectPayment>> GetPaymentsDetailsByTypeAsync(string paymentType);
 
     Task<Payment> CreatePaymentAsync(Payment payment);
     Task<bool> UpdatePaymentAsync(int id, Payment payment);
