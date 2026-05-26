@@ -2,12 +2,13 @@ using Backend.Services;
 using Backend.Interfaces;
 using Backend.Models;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
 
 namespace Backend.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-
+[Authorize(Roles = "Admin")]
 public class UsersController : ControllerBase
 {
     private readonly IUserService _userService;

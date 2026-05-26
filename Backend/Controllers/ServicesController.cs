@@ -1,9 +1,11 @@
 using Microsoft.AspNetCore.Mvc;
 using Backend.Models;
 using Backend.Interfaces;
+using Microsoft.AspNetCore.Authorization;
 
 [ApiController]
 [Route("api/[controller]")]
+[Authorize(Roles = "Admin")]
 
 public class ServicesController : ControllerBase
 {
