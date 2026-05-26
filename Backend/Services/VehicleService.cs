@@ -49,21 +49,24 @@ public class VehicleService : IVehiclesService
         return vehicle;
     }
 
-    public async Task<bool> UpdateVehicleAsync(int id, Vehicle vehicle)
+   public async Task<bool> UpdateVehicleAsync(int id, Vehicle vehicle)
+{
+    var existingVehicle = await _context.Vehicles.FindAsync(id);
+
+    if (existingVehicle == null)
     {
-        var existingVehicle = await _context.Vehicles.FindAsync(id);
-
-        if(existingVehicle == null)
-        {
-            return false;
-        }
- 
-       existingVehicle.LicensePlate = vehicle.LicensePlate;
-       existingVehicle.CustomerId = vehicle.CustomerId;
-
-       await _context.SaveChangesAsync();
-       return true;
+        return false;
     }
+
+    existingVehicle.LicensePlate = vehicle.LicensePlate;
+    existingVehicle.Brand = vehicle.Brand;
+    existingVehicle.Model = vehicle.Model;
+    existingVehicle.Series = vehicle.Series;
+    existingVehicle.CustomerId = vehicle.CustomerId;
+
+    await _context.SaveChangesAsync();
+    return true;
+}
 
     public async Task<bool> DeleteVehicleAsync(int id)
     {

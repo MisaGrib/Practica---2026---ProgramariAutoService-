@@ -23,10 +23,16 @@ public class AuthService : IAuthService
             .Include(u => u.Role)
             .FirstOrDefaultAsync(u =>
                 u.Email == loginRequest.Email &&
-                u.PasswordHash == loginRequest.Password &&
                 u.IsActive == true);
 
         if (user == null)
+        {
+            return null;
+        }
+
+        bool isPasswordValid = BCrypt.Net.BCrypt.Verify(loginRequest.Password, user.PasswordHash);
+
+        if (!isPasswordValid)
         {
             return null;
         }
@@ -62,7 +68,7 @@ public class AuthService : IAuthService
         var user = new User
         {
             Email = registerRequest.Email,
-            PasswordHash = registerRequest.Password,
+            PasswordHash = BCrypt.Net.BCrypt.HashPassword(registerRequest.Password),
             RoleId = registerRequest.RoleId,
             CreatedAt = DateTime.Now,
             IsActive = true
@@ -79,7 +85,6 @@ public class AuthService : IAuthService
         var user = await _context.Users
             .FirstOrDefaultAsync(u =>
                 u.Email == changePasswordRequest.Email &&
-                u.PasswordHash == changePasswordRequest.OldPassword &&
                 u.IsActive == true);
 
         if (user == null)
@@ -87,7 +92,14 @@ public class AuthService : IAuthService
             return false;
         }
 
-        user.PasswordHash = changePasswordRequest.NewPassword;
+        bool isOldPasswordValid = BCrypt.Net.BCrypt.Verify(changePasswordRequest.OldPassword, user.PasswordHash);
+
+        if (!isOldPasswordValid)
+        {
+            return false;
+        }
+
+        user.PasswordHash = BCrypt.Net.BCrypt.HashPassword(changePasswordRequest.NewPassword);
 
         await _context.SaveChangesAsync();
         return true;
