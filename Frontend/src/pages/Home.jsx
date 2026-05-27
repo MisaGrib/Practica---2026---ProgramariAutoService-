@@ -43,14 +43,18 @@ export default function Home() {
         position: 'sticky', top: 0, zIndex: 100
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <div style={{
-            background: '#2563eb', borderRadius: 10, width: 36, height: 36,
-            display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontSize: 18
-          }}>🚗</div>
-          <span style={{ fontWeight: 800, fontSize: 20 }}>
-            AutoPro <span style={{ color: '#2563eb' }}>Moldova</span>
-          </span>
-        </div>
+  <div style={{
+    background: '#2563eb', borderRadius: 10, width: 38, height: 38,
+    display: 'flex', alignItems: 'center', justifyContent: 'center'
+  }}>
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/>
+    </svg>
+  </div>
+  <span style={{ fontWeight: 800, fontSize: 20 }}>
+    AutoPro <span style={{ color: '#2563eb' }}>Moldova</span>
+  </span>
+</div>
         <div style={{ display: 'flex', gap: 36, fontSize: 15, fontWeight: 500 }}>
           {['Acasă', 'Servicii', 'Despre Noi', 'Contact'].map(item => (
             <a key={item} href="#" style={{ textDecoration: 'none', color: '#1a1a2e' }}>{item}</a>
@@ -61,7 +65,7 @@ export default function Home() {
             background: 'none', border: 'none', fontWeight: 600,
             fontSize: 15, cursor: 'pointer', color: '#1a1a2e'
           }}>INTRĂ ÎN CONT</button>
-          <button onClick={() => navigate('/login')} style={{
+          <button onClick={() => navigate('/register')} style={{
             background: '#2563eb', color: '#fff', border: 'none',
             borderRadius: 8, padding: '10px 22px', fontWeight: 700,
             fontSize: 15, cursor: 'pointer'
