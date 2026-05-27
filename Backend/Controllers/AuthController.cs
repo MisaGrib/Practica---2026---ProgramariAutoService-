@@ -40,19 +40,22 @@ public class AuthController : ControllerBase
     {
         if (registerRequest == null ||
             string.IsNullOrWhiteSpace(registerRequest.Email) ||
-            string.IsNullOrWhiteSpace(registerRequest.Password))
+            string.IsNullOrWhiteSpace(registerRequest.Password) ||
+            string.IsNullOrWhiteSpace(registerRequest.FirstName) ||
+            string.IsNullOrWhiteSpace(registerRequest.LastName) ||
+            string.IsNullOrWhiteSpace(registerRequest.Phone))
         {
-            return BadRequest("Datele pentru creare cont sunt obligatorii.");
+            return BadRequest("Toate campurile sunt obligatorii.");
         }
 
         var isCreated = await _authService.RegisterAsync(registerRequest);
 
         if (!isCreated)
         {
-            return BadRequest("Utilizatorul exista deja sau rolul nu este valid.");
+            return BadRequest("Emailul sau telefonul exista deja.");
         }
 
-        return Ok("Contul a fost creat cu succes.");
+        return Ok("Contul de client a fost creat cu succes.");
     }
 
     [HttpPut("change-password")]
@@ -74,5 +77,25 @@ public class AuthController : ControllerBase
         }
 
         return Ok("Parola a fost schimbata cu succes.");
+    }
+
+    [HttpPut("reset-password")]
+    public async Task<IActionResult> ResetPassword([FromBody] ResetPasswordRequestDto resetPasswordRequest)
+    {
+        if (resetPasswordRequest == null ||
+            string.IsNullOrWhiteSpace(resetPasswordRequest.Email) ||
+            string.IsNullOrWhiteSpace(resetPasswordRequest.NewPassword))
+        {
+            return BadRequest("Email-ul si parola noua sunt obligatorii.");
+        }
+
+        var isReset = await _authService.ResetPasswordAsync(resetPasswordRequest);
+
+        if (!isReset)
+        {
+            return BadRequest("Utilizatorul nu exista sau este inactiv.");
+        }
+
+        return Ok("Parola a fost resetata cu succes.");
     }
 }
