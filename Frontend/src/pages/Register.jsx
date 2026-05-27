@@ -54,38 +54,34 @@ export default function Register() {
   const [success, setSuccess] = useState(false);
   const [loading, setLoading] = useState(false);
 
-  const handleRegister = async () => {
-    if (!firstName || !lastName || !phone || !email || !password || !confirm) {
-      setError('Toate câmpurile sunt obligatorii.');
-      return;
-    }
-    if (password !== confirm) {
-      setError('Parolele nu coincid.');
-      return;
-    }
-    setLoading(true);
-    setError('');
-    try {
-      const userRes = await api.post('/auth/register', { email, password, roleId: 3 });
-
-      
-      const userByEmail = await api.get(`/users/email/${email}`);
-      await api.post('/customers', {
-        firstName,
-        lastName,
-        phone,
-        email,
-        userId: userByEmail.data.id
-      });
-
-      setSuccess(true);
-      setTimeout(() => navigate('/login'), 2000);
-    } catch {
-      setError('Eroare la înregistrare. Email-ul poate fi deja folosit.');
-    } finally {
-      setLoading(false);
-    }
-  };
+ const handleRegister = async () => {
+  if (!firstName || !lastName || !phone || !email || !password || !confirm) {
+    setError('Toate câmpurile sunt obligatorii.');
+    return;
+  }
+  if (password !== confirm) {
+    setError('Parolele nu coincid.');
+    return;
+  }
+  setLoading(true);
+  setError('');
+  try {
+    await api.post('/auth/register', {
+      email,
+      password,
+      firstName,
+      lastName,
+      phone
+    });
+    setSuccess(true);
+    setTimeout(() => navigate('/login'), 2000);
+  } catch (err) {
+    const message = err?.response?.data || 'Eroare la înregistrare. Verifică datele introduse.';
+    setError(typeof message === 'string' ? message : 'Eroare la înregistrare. Verifică datele introduse.');
+  } finally {
+    setLoading(false);
+  }
+};
 
 
   return (

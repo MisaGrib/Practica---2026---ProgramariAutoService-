@@ -5,10 +5,8 @@ import api from '../api/axios';
 export default function ForgotPassword() {
   const navigate = useNavigate();
   const [email, setEmail] = useState('');
-  const [oldPassword, setOldPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  const [showOld, setShowOld] = useState(false);
   const [showNew, setShowNew] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
   const [step, setStep] = useState(1); // 1 = email, 2 = reset parola
@@ -31,7 +29,7 @@ export default function ForgotPassword() {
   };
 
   const handleResetPassword = async () => {
-    if (!oldPassword || !newPassword || !confirmPassword) {
+    if (!newPassword || !confirmPassword) {
       setError('Toate câmpurile sunt obligatorii.'); return;
     }
     if (newPassword !== confirmPassword) {
@@ -40,15 +38,14 @@ export default function ForgotPassword() {
     setLoading(true);
     setError('');
     try {
-      await api.put('/auth/change-password', {
+      await api.put('/auth/reset-password', {
         email,
-        oldPassword,
         newPassword
       });
       setSuccess(true);
       setTimeout(() => navigate('/login'), 2000);
     } catch {
-      setError('Parola veche este incorectă.');
+      setError('Nu s-a putut reseta parola. Verifică email-ul și încearcă din nou.');
     } finally {
       setLoading(false);
     }
@@ -105,7 +102,7 @@ export default function ForgotPassword() {
           <p style={{ color: '#94a3b8', fontSize: 16, lineHeight: 1.7, maxWidth: 380 }}>
             {step === 1
               ? 'Introdu email-ul contului tău și te vom ajuta să îți resetezi parola.'
-              : 'Introdu parola veche și alege o parolă nouă sigură pentru contul tău.'}
+              : 'Alege o parolă nouă sigură pentru contul tău.'}
           </p>
         </div>
 
@@ -150,7 +147,7 @@ export default function ForgotPassword() {
           <div style={{
             background: '#f0fdf4', border: '1px solid #86efac', borderRadius: 8,
             padding: '10px 14px', color: '#16a34a', fontSize: 14, marginBottom: 16
-          }}>✅ Parola a fost schimbată! Redirecționare...</div>
+          }}>✅ Parola a fost resetată! Redirecționare...</div>
         )}
 
         {error && (
@@ -188,23 +185,6 @@ export default function ForgotPassword() {
           </>
         ) : (
           <>
-            {/* Parola veche */}
-            <label style={{ fontSize: 12, fontWeight: 700, letterSpacing: 1, marginBottom: 6, display: 'block' }}>
-              PAROLA VECHE
-            </label>
-            <div style={{
-              display: 'flex', alignItems: 'center', gap: 10, border: '1px solid #e5e7eb',
-              borderRadius: 10, padding: '12px 14px', marginBottom: 16
-            }}>
-              <span>🔒</span>
-              <input
-                type={showOld ? 'text' : 'password'} placeholder="••••••••" value={oldPassword}
-                onChange={e => setOldPassword(e.target.value)}
-                style={{ border: 'none', outline: 'none', fontSize: 15, width: '100%' }}
-              />
-              <EyeIcon show={showOld} toggle={() => setShowOld(!showOld)} />
-            </div>
-
             {/* Parola noua */}
             <label style={{ fontSize: 12, fontWeight: 700, letterSpacing: 1, marginBottom: 6, display: 'block' }}>
               PAROLĂ NOUĂ
