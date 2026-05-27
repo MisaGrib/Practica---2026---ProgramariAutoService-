@@ -1,8 +1,7 @@
-using Backend.Services;
 using Backend.Interfaces;
 using Backend.Models;
-using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 
 namespace Backend.Controllers;
 
@@ -46,6 +45,7 @@ public class UsersController : ControllerBase
     }
 
     [HttpGet("email/{email}")]
+    [AllowAnonymous]
     public async Task<IActionResult> GetUserDeByEmail(string email)
     {
         var user = await _userService.GetUserDetailsByEmailAsync(email);
