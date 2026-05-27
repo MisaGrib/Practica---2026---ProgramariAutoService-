@@ -3,11 +3,17 @@ using Backend.DTOs.Auth;
 using Backend.Interfaces;
 using Backend.Models;
 using Microsoft.EntityFrameworkCore;
+using System;
+using System.Security.Cryptography;
+using System.Text;
+using System.Threading.Tasks;
 
 namespace Backend.Services;
 
 public class AuthService : IAuthService
 {
+    private const int ClientRoleId = 2;
+
     private readonly AutoServiceAppointmentsContext _context;
     private readonly IJwtService _jwtService;
 
@@ -17,22 +23,26 @@ public class AuthService : IAuthService
         _jwtService = jwtService;
     }
 
+    private static string HashPassword(string password)
+    {
+        using var sha256 = SHA256.Create();
+        var bytes = Encoding.UTF8.GetBytes(password);
+        var hash = sha256.ComputeHash(bytes);
+        return Convert.ToBase64String(hash);
+    }
+
     public async Task<LoginResponseDto?> LoginAsync(LoginRequestDto loginRequest)
     {
+        var passwordHash = HashPassword(loginRequest.Password);
+
         var user = await _context.Users
             .Include(u => u.Role)
             .FirstOrDefaultAsync(u =>
                 u.Email == loginRequest.Email &&
+                u.PasswordHash == passwordHash &&
                 u.IsActive == true);
 
         if (user == null)
-        {
-            return null;
-        }
-
-        bool isPasswordValid = BCrypt.Net.BCrypt.Verify(loginRequest.Password, user.PasswordHash);
-
-        if (!isPasswordValid)
         {
             return null;
         }
@@ -57,10 +67,18 @@ public class AuthService : IAuthService
             return false;
         }
 
-        var roleExists = await _context.Roles
-            .AnyAsync(r => r.Id == registerRequest.RoleId);
+        var phoneExists = await _context.Customers
+            .AnyAsync(c => c.Phone == registerRequest.Phone);
 
-        if (!roleExists)
+        if (phoneExists)
+        {
+            return false;
+        }
+
+        var clientRoleExists = await _context.Roles
+            .AnyAsync(r => r.Id == ClientRoleId);
+
+        if (!clientRoleExists)
         {
             return false;
         }
@@ -68,8 +86,8 @@ public class AuthService : IAuthService
         var user = new User
         {
             Email = registerRequest.Email,
-            PasswordHash = BCrypt.Net.BCrypt.HashPassword(registerRequest.Password),
-            RoleId = registerRequest.RoleId,
+            PasswordHash = HashPassword(registerRequest.Password),
+            RoleId = ClientRoleId,
             CreatedAt = DateTime.Now,
             IsActive = true
         };
@@ -77,14 +95,29 @@ public class AuthService : IAuthService
         _context.Users.Add(user);
         await _context.SaveChangesAsync();
 
+        var customer = new Customer
+        {
+            FirstName = registerRequest.FirstName,
+            LastName = registerRequest.LastName,
+            Phone = registerRequest.Phone,
+            Email = registerRequest.Email,
+            UserId = user.Id
+        };
+
+        _context.Customers.Add(customer);
+        await _context.SaveChangesAsync();
+
         return true;
     }
 
     public async Task<bool> ChangePasswordAsync(ChangePasswordRequestDto changePasswordRequest)
     {
+        var oldPasswordHash = HashPassword(changePasswordRequest.OldPassword);
+
         var user = await _context.Users
             .FirstOrDefaultAsync(u =>
                 u.Email == changePasswordRequest.Email &&
+                u.PasswordHash == oldPasswordHash &&
                 u.IsActive == true);
 
         if (user == null)
@@ -92,14 +125,25 @@ public class AuthService : IAuthService
             return false;
         }
 
-        bool isOldPasswordValid = BCrypt.Net.BCrypt.Verify(changePasswordRequest.OldPassword, user.PasswordHash);
+        user.PasswordHash = HashPassword(changePasswordRequest.NewPassword);
 
-        if (!isOldPasswordValid)
+        await _context.SaveChangesAsync();
+        return true;
+    }
+
+    public async Task<bool> ResetPasswordAsync(ResetPasswordRequestDto resetPasswordRequest)
+    {
+        var user = await _context.Users
+            .FirstOrDefaultAsync(u =>
+                u.Email == resetPasswordRequest.Email &&
+                u.IsActive == true);
+
+        if (user == null)
         {
             return false;
         }
 
-        user.PasswordHash = BCrypt.Net.BCrypt.HashPassword(changePasswordRequest.NewPassword);
+        user.PasswordHash = HashPassword(resetPasswordRequest.NewPassword);
 
         await _context.SaveChangesAsync();
         return true;

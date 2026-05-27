@@ -8,7 +8,7 @@ namespace Backend.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-[Authorize(Roles = "Admin")]
+
 public class UsersController : ControllerBase
 {
     private readonly IUserService _userService;
@@ -46,6 +46,7 @@ public class UsersController : ControllerBase
     }
 
     [HttpGet("email/{email}")]
+    [AllowAnonymous]
     public async Task<IActionResult> GetUserDeByEmail(string email)
     {
         var user = await _userService.GetUserDetailsByEmailAsync(email);
