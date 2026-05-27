@@ -14,6 +14,10 @@ GO
 SELECT * FROM Roles
  go 
 
+USE AutoServiceAppointments;
+GO
+
+
 -- USERS
 INSERT INTO Users(Email, PasswordHash, RoleId)
 VALUES
@@ -29,6 +33,9 @@ VALUES
 ('victor.topala@service.md', 'mech123', 3),
 ('dorin.spinu@service.md', 'mech123', 3);
 
+GO
+
+SELECT * FROM Users
 GO
 
 -- CUSTOMERS
