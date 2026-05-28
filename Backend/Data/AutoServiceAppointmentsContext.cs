@@ -101,6 +101,7 @@ public partial class AutoServiceAppointmentsContext : DbContext
 
             entity.HasOne(d => d.User).WithMany(p => p.Customers)
                 .HasForeignKey(d => d.UserId)
+                .IsRequired(false)
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("FK__Customers__UserI__3F466844");
         });
@@ -120,6 +121,7 @@ public partial class AutoServiceAppointmentsContext : DbContext
 
             entity.HasOne(d => d.User).WithMany(p => p.Mechanics)
                 .HasForeignKey(d => d.UserId)
+                .IsRequired(false)
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("FK__Mechanics__UserI__440B1D61");
         });

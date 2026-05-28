@@ -2,6 +2,10 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../api/axios';
 
+const isValidEmail = value => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
+const normalizePhone = value => (value || '').replace(/\D/g, '');
+const isValidPhone = value => /^\d{8,15}$/.test(value);
+
 const EyeIcon = ({ show, toggle }) => (
   <span onClick={toggle} style={{ cursor: 'pointer', color: '#888' }}>
     {show ? (
@@ -57,6 +61,18 @@ export default function Register() {
  const handleRegister = async () => {
   if (!firstName || !lastName || !phone || !email || !password || !confirm) {
     setError('Toate câmpurile sunt obligatorii.');
+    return;
+  }
+  if (!isValidEmail(email)) {
+    setError('Adresa de email nu este validă.');
+    return;
+  }
+  if (!isValidPhone(phone)) {
+    setError('Telefonul trebuie să conțină doar cifre și să aibă între 8 și 15 cifre.');
+    return;
+  }
+  if (password.length < 8) {
+    setError('Parola trebuie să aibă cel puțin 8 caractere.');
     return;
   }
   if (password !== confirm) {
@@ -164,7 +180,7 @@ export default function Register() {
         </div>
 
         <Field label="TELEFON" icon="📞" type="tel"
-          placeholder="+373 60 000 000" value={phone} onChange={setPhone} />
+          placeholder="602345678" value={phone} onChange={value => setPhone(normalizePhone(value))} />
 
         <Field label="EMAIL" icon="✉️" type="email"
           placeholder="adresa@email.md" value={email} onChange={setEmail} />

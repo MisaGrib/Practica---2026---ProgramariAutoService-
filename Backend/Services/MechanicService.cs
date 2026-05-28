@@ -2,12 +2,15 @@ using Backend.Models;
 using Backend.Interfaces;
 using Backend.Data;
 using Microsoft.EntityFrameworkCore;
+using System.Security.Cryptography;
+using System.Text;
 
 namespace Backend.Services;
 
 
 public class MechanicService : IMechanicService
 {
+    private const int MechanicRoleId = 3;
     private readonly AutoServiceAppointmentsContext _context;
 
     public MechanicService(AutoServiceAppointmentsContext context)
@@ -34,6 +37,9 @@ public class MechanicService : IMechanicService
 
     public async Task<Mechanic> CreateMechanicAsync(Mechanic mechanic)
     {
+        var user = await _context.Users.FirstOrDefaultAsync(u => u.Email == mechanic.Email);
+
+        mechanic.UserId = user?.Id;
         _context.Mechanics.Add(mechanic);
         await _context.SaveChangesAsync();
         return mechanic;
@@ -47,12 +53,14 @@ public class MechanicService : IMechanicService
         {
             return false;
         }
-
+ 
        existingMechanic.FirstName = mechanic.FirstName;
        existingMechanic.LastName = mechanic.LastName;
        existingMechanic.Phone = mechanic.Phone;
        existingMechanic.Email = mechanic.Email;
-         
+
+       var user = await _context.Users.FirstOrDefaultAsync(u => u.Email == mechanic.Email);
+       existingMechanic.UserId = user?.Id;
 
        await _context.SaveChangesAsync();
        return true;
@@ -74,4 +82,11 @@ public class MechanicService : IMechanicService
     }
 
 
+    private static string HashPassword(string password)
+    {
+        using var sha256 = SHA256.Create();
+        var bytes = Encoding.UTF8.GetBytes(password);
+        var hash = sha256.ComputeHash(bytes);
+        return Convert.ToBase64String(hash);
+    }
 }

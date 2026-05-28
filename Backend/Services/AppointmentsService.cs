@@ -103,6 +103,11 @@ public class AppointmentsService : IAppointmentsService
         {
             return false;
         }
+
+        if (appointment.Status == "Complet" && DateTime.Now < appointment.ScheduledDate)
+        {
+            return false;
+        }
  
             existingAppointment.CustomerId = appointment.CustomerId;
             existingAppointment.VehicleId = appointment.VehicleId;
@@ -123,6 +128,11 @@ public class AppointmentsService : IAppointmentsService
         var existingAppointment = await _context.Appointments.FindAsync(id);
 
         if(existingAppointment == null)
+        {
+            return false;
+        }
+
+        if (status == "Complet" && DateTime.Now < existingAppointment.ScheduledDate)
         {
             return false;
         }

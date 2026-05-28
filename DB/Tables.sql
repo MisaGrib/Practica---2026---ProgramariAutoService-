@@ -35,7 +35,7 @@ CREATE TABLE Customers(
     LastName NVARCHAR(50) NOT NULL,
     Phone NVARCHAR(13) UNIQUE NOT NULL,
     Email NVARCHAR(100) UNIQUE NOT NULL,
-    UserId INT NOT NULL,
+    UserId INT NULL,
 
     FOREIGN KEY (UserId) REFERENCES Users(Id)
 );
@@ -46,7 +46,7 @@ CREATE TABLE Mechanics(
     LastName NVARCHAR(50) NOT NULL,
     Phone NVARCHAR(13) UNIQUE NOT NULL,
     Email NVARCHAR(100) UNIQUE NOT NULL,
-    UserId INT NOT NULL,
+    UserId INT NULL,
 
     FOREIGN KEY (UserId) REFERENCES Users(Id)
 );

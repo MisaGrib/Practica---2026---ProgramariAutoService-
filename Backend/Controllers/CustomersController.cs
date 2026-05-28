@@ -50,7 +50,6 @@ public class CustomerController : ControllerBase
     }
 
     [HttpPost]
-    
     public async Task<IActionResult> Create([FromBody] Customer newCustomer)
     {
         if(newCustomer == null)
@@ -58,10 +57,15 @@ public class CustomerController : ControllerBase
             return BadRequest("Datele nu pot fi nule.");
         }
 
+        var existingCustomer = await _customerService.GetCustomerByEmailAsync(newCustomer.Email);
+        if (existingCustomer != null)
+        {
+            return Conflict($"Există deja un client cu email-ul {newCustomer.Email}.");
+        }
+
         var createdCustomer = await _customerService.CreateCustomerAsync(newCustomer);
 
         return CreatedAtAction(nameof(GetCustomerById), new{id = createdCustomer.Id}, createdCustomer);
-
     }
 
     [HttpPut("{id}")]
@@ -70,7 +74,13 @@ public class CustomerController : ControllerBase
       if(updatedCustomer == null)
         {
             return BadRequest("Datele nu pot fi nule.");
-        }    
+        }
+
+        var existingCustomer = await _customerService.GetCustomerByEmailAsync(updatedCustomer.Email);
+        if (existingCustomer != null && existingCustomer.Id != id)
+        {
+            return Conflict($"Email-ul {updatedCustomer.Email} este deja folosit de un alt client.");
+        }
 
         var isSucces = await _customerService.UpdateCustomerAsync(id, updatedCustomer);
 

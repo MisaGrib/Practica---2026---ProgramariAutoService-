@@ -15,9 +15,9 @@ public partial class Mechanic
 
     public string Email { get; set; } = null!;
 
-    public int UserId { get; set; }
+    public int? UserId { get; set; }
 
     public virtual ICollection<Appointment> Appointments { get; set; } = new List<Appointment>();
 
-    public virtual User User { get; set; } = null!;
+    public virtual User? User { get; set; }
 }

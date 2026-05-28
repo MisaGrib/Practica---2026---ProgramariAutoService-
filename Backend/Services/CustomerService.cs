@@ -2,12 +2,15 @@ using Backend.Models;
 using Backend.Interfaces;
 using Backend.Data;
 using Microsoft.EntityFrameworkCore;
+using System.Security.Cryptography;
+using System.Text;
 
 namespace Backend.Services;
 
 
 public class CustomerService : ICustomerService
 {
+    private const int ClientRoleId = 2;
     private readonly AutoServiceAppointmentsContext _context;
 
     public CustomerService(AutoServiceAppointmentsContext context)
@@ -34,6 +37,9 @@ public class CustomerService : ICustomerService
 
     public async Task<Customer> CreateCustomerAsync(Customer customer)
     {
+        var user = await _context.Users.FirstOrDefaultAsync(u => u.Email == customer.Email);
+
+        customer.UserId = user?.Id;
         _context.Customers.Add(customer);
         await _context.SaveChangesAsync();
         return customer;
@@ -52,7 +58,9 @@ public class CustomerService : ICustomerService
        existingCustomer.LastName = customer.LastName;
        existingCustomer.Phone = customer.Phone;
        existingCustomer.Email = customer.Email;
-         
+
+       var user = await _context.Users.FirstOrDefaultAsync(u => u.Email == customer.Email);
+       existingCustomer.UserId = user?.Id;
 
        await _context.SaveChangesAsync();
        return true;
@@ -73,5 +81,11 @@ public class CustomerService : ICustomerService
         return true;
     }
 
-
+    private static string HashPassword(string password)
+    {
+        using var sha256 = SHA256.Create();
+        var bytes = Encoding.UTF8.GetBytes(password);
+        var hash = sha256.ComputeHash(bytes);
+        return Convert.ToBase64String(hash);
+    }
 }

@@ -50,7 +50,6 @@ public class MechanicController : ControllerBase
     }
 
     [HttpPost]
-    
     public async Task<IActionResult> Create([FromBody] Mechanic newMechanic)
     {
         if(newMechanic == null)
@@ -58,10 +57,15 @@ public class MechanicController : ControllerBase
             return BadRequest("Datele nu pot fi nule.");
         }
 
+        var existingMechanic = await _mechanicService.GetMechanicByEmailAsync(newMechanic.Email);
+        if (existingMechanic != null)
+        {
+            return Conflict($"Există deja un mecanic cu email-ul {newMechanic.Email}.");
+        }
+
         var createdMechanic = await _mechanicService.CreateMechanicAsync(newMechanic);
 
         return CreatedAtAction(nameof(GetMechanicById), new{id = createdMechanic.Id}, createdMechanic);
-
     }
 
     [HttpPut("{id}")]
@@ -70,7 +74,13 @@ public class MechanicController : ControllerBase
       if(updatedMechanic == null)
         {
             return BadRequest("Datele nu pot fi nule.");
-        }    
+        }
+
+        var existingMechanic = await _mechanicService.GetMechanicByEmailAsync(updatedMechanic.Email);
+        if (existingMechanic != null && existingMechanic.Id != id)
+        {
+            return Conflict($"Email-ul {updatedMechanic.Email} este deja folosit de un alt mecanic.");
+        }
 
         var isSucces = await _mechanicService.UpdateMechanicAsync(id, updatedMechanic);
 

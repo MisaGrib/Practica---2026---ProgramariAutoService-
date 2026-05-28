@@ -197,13 +197,19 @@ export default function Home() {
       <footer style={{ background: '#f8fafc', padding: '60px', borderTop: '1px solid #e5e7eb' }}>
         <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 1fr', gap: 40, marginBottom: 40 }}>
           <div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16 }}>
-              <div style={{
-                background: '#2563eb', borderRadius: 10, width: 36, height: 36,
-                display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontSize: 18
-              }}>🚗</div>
-              <span style={{ fontWeight: 800, fontSize: 18 }}>AutoPro</span>
-            </div>
+             <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+  <div style={{
+    background: '#2563eb', borderRadius: 10, width: 38, height: 38,
+    display: 'flex', alignItems: 'center', justifyContent: 'center'
+  }}>
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/>
+    </svg>
+  </div>
+  <span style={{ fontWeight: 800, fontSize: 20 }}>
+    AutoPro <span style={{ color: '#2563eb' }}>Moldova</span>
+  </span>
+</div>
             <p style={{ color: '#666', fontSize: 14, lineHeight: 1.7, marginBottom: 16 }}>
               Pasiune pentru excelență și precizie în tot ce facem. Service auto de încredere în inima Moldovei.
             </p>

@@ -13,9 +13,15 @@ export default function Login() {
   const [loading, setLoading] = useState(false);
   const [showPass, setShowPass] = useState(false);
 
+  const isValidEmail = value => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
+
   const handleLogin = async () => {
     if (!email || !password) {
       setError('Email-ul și parola sunt obligatorii.');
+      return;
+    }
+    if (!isValidEmail(email)) {
+      setError('Adresa de email nu este validă.');
       return;
     }
 

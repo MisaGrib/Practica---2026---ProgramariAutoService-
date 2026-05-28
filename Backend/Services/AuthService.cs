@@ -67,10 +67,11 @@ public class AuthService : IAuthService
             return false;
         }
 
-        var phoneExists = await _context.Customers
-            .AnyAsync(c => c.Phone == registerRequest.Phone);
+        var existingCustomer = await _context.Customers
+            .FirstOrDefaultAsync(c => c.Email == registerRequest.Email || c.Phone == registerRequest.Phone);
 
-        if (phoneExists)
+        if (existingCustomer != null &&
+            (existingCustomer.Email != registerRequest.Email || existingCustomer.Phone != registerRequest.Phone))
         {
             return false;
         }
@@ -95,17 +96,25 @@ public class AuthService : IAuthService
         _context.Users.Add(user);
         await _context.SaveChangesAsync();
 
-        var customer = new Customer
+        if (existingCustomer != null)
         {
-            FirstName = registerRequest.FirstName,
-            LastName = registerRequest.LastName,
-            Phone = registerRequest.Phone,
-            Email = registerRequest.Email,
-            UserId = user.Id
-        };
+            existingCustomer.UserId = user.Id;
+            await _context.SaveChangesAsync();
+        }
+        else
+        {
+            var customer = new Customer
+            {
+                FirstName = registerRequest.FirstName,
+                LastName = registerRequest.LastName,
+                Phone = registerRequest.Phone,
+                Email = registerRequest.Email,
+                UserId = user.Id
+            };
 
-        _context.Customers.Add(customer);
-        await _context.SaveChangesAsync();
+            _context.Customers.Add(customer);
+            await _context.SaveChangesAsync();
+        }
 
         return true;
     }
