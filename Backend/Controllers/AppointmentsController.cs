@@ -127,49 +127,69 @@ public class AppointmentsController : ControllerBase
     [HttpPost]
     public async Task<IActionResult> Create([FromBody] Appointment newAppointment)
     {
-        if(newAppointment == null)
+        if (newAppointment == null)
         {
             return BadRequest("Datele nu pot fi nule.");
         }
 
-        var createdAppointment = await _appointmentsService.CreateAppointmentAsync(newAppointment);
-
-        return CreatedAtAction(nameof(GetById), new{id = createdAppointment.Id}, createdAppointment);
+        try
+        {
+            var createdAppointment = await _appointmentsService.CreateAppointmentAsync(newAppointment);
+            return CreatedAtAction(nameof(GetById), new { id = createdAppointment.Id }, createdAppointment);
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(ex.Message);
+        }
     }
 
     [HttpPut("{id}")]
     public async Task<IActionResult> Update (int id, [FromBody] Appointment updateAppointement)
     {
-        if(updateAppointement == null)
+        if (updateAppointement == null)
         {
             return BadRequest("Datele nu pot fi nule.");
         }
 
-        var isSuccess = await _appointmentsService.UpdateAppointmentAsync(id, updateAppointement);
-
-        if (!isSuccess)
+        try
         {
-            return NotFound($"Nu pot fi găsite date pentru această programare");
+            var isSuccess = await _appointmentsService.UpdateAppointmentAsync(id, updateAppointement);
+
+            if (!isSuccess)
+            {
+                return NotFound($"Nu pot fi găsite date pentru această programare");
+            }
+            return Ok(updateAppointement);
         }
-        return Ok(updateAppointement);
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(ex.Message);
+        }
     }
 
     [HttpPut("{id}/status")]
     public async Task<IActionResult> updateStatus(int id, [FromBody] string status)
     {
-        if(status == null)
+        if (status == null)
         {
             return BadRequest("Statusul nu poate fi nul.");
         }
 
-        var isSuccess = await _appointmentsService.UpdateAppointmentStatusAsync(id, status);
-
-        if (!isSuccess)
+        try
         {
-            return NotFound($"Nu pot fi găsite date pentru această programare");
-        }
+            var isSuccess = await _appointmentsService.UpdateAppointmentStatusAsync(id, status);
 
-        return Ok($"Statusul programării a fost actualizat la: {status}");
+            if (!isSuccess)
+            {
+                return NotFound($"Nu pot fi găsite date pentru această programare");
+            }
+
+            return Ok($"Statusul programării a fost actualizat la: {status}");
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(ex.Message);
+        }
     }
 
     [HttpDelete("{id}")]

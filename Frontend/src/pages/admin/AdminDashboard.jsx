@@ -109,7 +109,9 @@ export default function AdminDashboard() {
       vehicles: data.vehicleDetails.filter(v => !q('vehicles') || v.licensePlate?.toLowerCase().includes(q('vehicles')) || v.brand?.toLowerCase().includes(q('vehicles')) || v.model?.toLowerCase().includes(q('vehicles')) || v.customer?.toLowerCase().includes(q('vehicles'))),
       services: data.services.filter(s => !q('services') || s.name?.toLowerCase().includes(q('services')) || s.description?.toLowerCase().includes(q('services'))),
       payments: data.paymentDetails.filter(p => !q('payments') || p.appointmentCode?.toLowerCase().includes(q('payments')) || p.paymentType?.toLowerCase().includes(q('payments'))),
-      users: data.userDetails.filter(u => !q('users') || u.email?.toLowerCase().includes(q('users')) || u.name?.toLowerCase().includes(q('users')))
+      users: data.users
+        .map(u => ({ ...u, roleName: data.roles.find(r => r.id === Number(u.roleId))?.name || '' }))
+        .filter(u => !q('users') || u.email?.toLowerCase().includes(q('users')) || u.roleName?.toLowerCase().includes(q('users')))
     };
   }, [data, searches]);
 
@@ -129,6 +131,21 @@ export default function AdminDashboard() {
       if (!form.firstName || !form.lastName || !form.phone || !form.email) { setError('Completează toate câmpurile.'); return false; }
       if (!isValidPhone(form.phone)) { setError('Telefonul trebuie să conțină doar cifre și minim 8 caractere.'); return false; }
       if (!isValidEmail(form.email)) { setError('Email-ul nu este valid.'); return false; }
+    }
+    if (section === 'appointments') {
+      if (!form.customerId || !form.vehicleId || !form.mechanicId || !form.serviceId || !form.scheduledDate) {
+        setError('Completează toate câmpurile obligatorii.');
+        return false;
+      }
+      const scheduled = new Date(form.scheduledDate);
+      if (Number.isNaN(scheduled.getTime())) {
+        setError('Data programării este invalidă.');
+        return false;
+      }
+      if (scheduled <= new Date()) {
+        setError('Data programării trebuie să fie în viitor.');
+        return false;
+      }
     }
     if (section === 'users') {
       if (!form.email) { setError('Selectează un email.'); return false; }
@@ -292,9 +309,14 @@ export default function AdminDashboard() {
       </ScrollTable>
     );
     if (section === 'users') return (
-      <ScrollTable headers={['Email', 'Rol', 'Acțiuni']}>
+      <ScrollTable headers={['Email', 'Rol', 'Activ', 'Acțiuni']}>
         {filtered.users.map(u => <tr key={u.id}>
-          <Td>{u.email}</Td><Td>{u.name}</Td>
+          <Td style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <span style={{ width: 10, height: 10, borderRadius: '50%', background: u.isActive ? '#16a34a' : '#dc2626' }} />
+            {u.email}
+          </Td>
+          <Td>{u.roleName || u.name}</Td>
+          <Td>{u.isActive ? 'Activ' : 'Inactiv'}</Td>
           <Td><Actions onEdit={() => edit('users', data.users.find(x => x.id === u.id) || u)} onDelete={() => remove('users', u.id)} /></Td>
         </tr>)}
       </ScrollTable>
@@ -378,7 +400,7 @@ export default function AdminDashboard() {
   );
 }
 
-// ── Forme ────────────────────────────────────────────────────────────────────
+//Forme
 
 function AppointmentForm({ form, data, setField, save, resetForm, loading }) {
   const availableVehicles = form.customerId ? data.vehicles.filter(v => String(v.customerId) === String(form.customerId)) : [];
@@ -400,9 +422,11 @@ function AppointmentForm({ form, data, setField, save, resetForm, loading }) {
       {data.services.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
     </Select>
     <Input label="Data" type="datetime-local" value={form.scheduledDate} onChange={v => setField('appointments', 'scheduledDate', v)} />
-    <Select label="Status" value={form.status} onChange={v => setField('appointments', 'status', v)}>
-      <option>Programat</option><option>În progres</option><option>Complet</option><option>Anulat</option>
-    </Select>
+    {form.id ? (
+      <Select label="Status" value={form.status} onChange={v => setField('appointments', 'status', v)}>
+        <option>Programat</option><option>În progres</option><option>Complet</option><option>Anulat</option>
+      </Select>
+    ) : null}
     <Input label="Problema" value={form.problemDescription} onChange={v => setField('appointments', 'problemDescription', v)} />
     <Buttons loading={loading} isEdit={form.id} onSave={() => save('appointments')} onCancel={() => resetForm('appointments')} />
   </FormGrid>;
@@ -464,19 +488,40 @@ function PaymentForm({ form, data, setField, save, resetForm, loading }) {
 }
 
 function UserForm({ form, data, availableEmails, setField, save, resetForm, loading }) {
+  const handleEmailChange = v => {
+    setField('users', 'email', v);
+    // Determina rolul automat din email
+    const isCustomer = data.customers.some(c => c.email?.toLowerCase() === v.toLowerCase());
+    const isMechanic = data.mechanics.some(m => m.email?.toLowerCase() === v.toLowerCase());
+    if (isMechanic) setField('users', 'roleId', data.roles.find(r => r.name === 'Mecanic')?.id || 2);
+    else if (isCustomer) setField('users', 'roleId', data.roles.find(r => r.name === 'Client')?.id || 3);
+  };
+
   return <FormGrid>
     {!form.id ? (
-      <Select label="Email" value={form.email} onChange={v => setField('users', 'email', v)}>
+      <Select label="Email" value={form.email} onChange={handleEmailChange}>
         <option value="">Selectează email</option>
-        {availableEmails.length > 0 ? availableEmails.map(item => <option key={item.email} value={item.email}>{item.label}</option>) : <option disabled>Nu sunt emailuri disponibile</option>}
+        {availableEmails.length > 0
+          ? availableEmails.map(item => <option key={item.email} value={item.email}>{item.label}</option>)
+          : <option disabled>Nu sunt emailuri disponibile</option>}
       </Select>
     ) : (
       <Input label="Email" type="email" value={form.email} onChange={() => {}} disabled />
     )}
     <Input label={form.id ? 'Parolă nouă (opțional)' : 'Parolă'} value={form.passwordHash} type="password" onChange={v => setField('users', 'passwordHash', v)} />
-    <Select label="Rol" value={form.roleId} onChange={v => setField('users', 'roleId', v)}>
-      {data.roles.map(r => <option key={r.id} value={r.id}>{r.name}</option>)}
-    </Select>
+    {form.id && (
+      <Select label="Rol" value={form.roleId} onChange={v => setField('users', 'roleId', v)}>
+        {data.roles.map(r => <option key={r.id} value={r.id}>{r.name}</option>)}
+      </Select>
+    )}
+    {!form.id && (
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+        <span style={{ fontSize: 11, color: '#64748b', fontWeight: 700, letterSpacing: 0.8, textTransform: 'uppercase' }}>Rol</span>
+        <div style={{ height: 42, border: '1px solid #e5e7eb', borderRadius: 6, padding: '0 12px', fontSize: 14, background: '#f9fafb', display: 'flex', alignItems: 'center', color: '#475569' }}>
+          {data.roles.find(r => r.id === Number(form.roleId))?.name || '—'}
+        </div>
+      </div>
+    )}
     <Select label="Activ" value={String(form.isActive)} onChange={v => setField('users', 'isActive', v === 'true')}>
       <option value="true">Da</option><option value="false">Nu</option>
     </Select>
@@ -484,14 +529,18 @@ function UserForm({ form, data, availableEmails, setField, save, resetForm, load
   </FormGrid>;
 }
 
-// ── Helpers ──────────────────────────────────────────────────────────────────
+// Helpers
 
 const endpoints = { appointments: '/appointments', mechanics: '/mechanic', customers: '/customer', vehicles: '/vehicles', services: '/services', payments: '/payments', users: '/users' };
 const titles = { appointments: 'Programări', mechanics: 'Mecanici', customers: 'Clienți', vehicles: 'Vehicule', services: 'Servicii', payments: 'Plăți', users: 'Utilizatori' };
 const searchPlaceholders = { appointments: 'Caută după cod, client, mecanic, status...', mechanics: 'Caută după nume, email, telefon...', customers: 'Caută după nume, email, telefon...', vehicles: 'Caută după număr, marcă, model, client...', services: 'Caută după denumire sau descriere...', payments: 'Caută după cod programare sau tip plată...', users: 'Caută după email sau rol...' };
 
 function toPayload(section, form) {
-  if (section === 'appointments') return { customerId: Number(form.customerId), vehicleId: Number(form.vehicleId), mechanicId: Number(form.mechanicId), serviceId: Number(form.serviceId), scheduledDate: form.scheduledDate, problemDescription: form.problemDescription || null, status: form.status };
+  if (section === 'appointments') {
+    const payload = { customerId: Number(form.customerId), vehicleId: Number(form.vehicleId), mechanicId: Number(form.mechanicId), serviceId: Number(form.serviceId), scheduledDate: form.scheduledDate, problemDescription: form.problemDescription || null };
+    if (form.id) payload.status = form.status;
+    return payload;
+  }
   if (section === 'mechanics' || section === 'customers') return { firstName: form.firstName, lastName: form.lastName, phone: form.phone, email: form.email };
   if (section === 'vehicles') return { licensePlate: form.licensePlate, brand: form.brand, model: form.model, series: form.series, customerId: Number(form.customerId) };
   if (section === 'services') return { name: form.name, description: form.description, price: Number(form.price) };
@@ -517,7 +566,7 @@ function monthName(month) {
   return months[month - 1];
 }
 
-// ── UI ────────────────────────────────────────────────────────────────────────
+// UI 
 
 function SearchBar({ value, onChange, placeholder }) {
   return (

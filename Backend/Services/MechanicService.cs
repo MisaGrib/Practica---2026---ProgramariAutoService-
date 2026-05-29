@@ -32,7 +32,8 @@ public class MechanicService : IMechanicService
 
     public async Task<Mechanic?> GetMechanicByEmailAsync(string email)
     {
-        return await _context.Mechanics.FirstOrDefaultAsync(c => c.Email == email);
+        var normalizedEmail = email.ToLower();
+        return await _context.Mechanics.FirstOrDefaultAsync(c => c.Email!.ToLower() == normalizedEmail);
     }
 
     public async Task<Mechanic> CreateMechanicAsync(Mechanic mechanic)

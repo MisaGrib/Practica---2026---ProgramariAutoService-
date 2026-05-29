@@ -5,7 +5,7 @@ using Microsoft.AspNetCore.Authorization;
 
 [ApiController]
 [Route("api/[controller]")]
-[Authorize(Roles = "Admin")]
+[Authorize(Roles = "Admin,Mecanic")]
 public class MechanicController : ControllerBase
 {
     private readonly IMechanicService _mechanicService;
@@ -16,6 +16,7 @@ public class MechanicController : ControllerBase
     }
 
     [HttpGet]
+    [Authorize(Roles = "Admin")]
     public async Task<IActionResult> GetAll()
     {
         var mechanics = await _mechanicService.GetAllMechanicsAsync();
@@ -43,6 +44,7 @@ public class MechanicController : ControllerBase
     }
 
     [HttpPost]
+    [Authorize(Roles = "Admin")]
     public async Task<IActionResult> Create([FromBody] Mechanic newMechanic)
     {
         if (newMechanic == null)
@@ -55,6 +57,7 @@ public class MechanicController : ControllerBase
     }
 
     [HttpPut("{id}")]
+    [Authorize(Roles = "Admin")]
     public async Task<IActionResult> Update(int id, [FromBody] Mechanic updatedMechanic)
     {
         if (updatedMechanic == null)
@@ -69,6 +72,7 @@ public class MechanicController : ControllerBase
     }
 
     [HttpDelete("{id}")]
+    [Authorize(Roles = "Admin")]
     public async Task<IActionResult> Delete(int id)
     {
         var isDeleted = await _mechanicService.DeleteMechanicAsync(id);
