@@ -15,8 +15,8 @@ const menuItems = [
 
 const initialForms = {
   appointments: { id: null, customerId: '', vehicleId: '', mechanicId: '', serviceId: '', scheduledDate: '', problemDescription: '', status: 'Programat' },
-  mechanics: { id: null, firstName: '', lastName: '', phone: '', email: '', userId: '' },
-  customers: { id: null, firstName: '', lastName: '', phone: '', email: '', userId: '' },
+  mechanics: { id: null, firstName: '', lastName: '', phone: '', email: '' },
+  customers: { id: null, firstName: '', lastName: '', phone: '', email: '' },
   vehicles: { id: null, licensePlate: '', brand: '', model: '', series: '', customerId: '' },
   services: { id: null, name: '', description: '', price: '' },
   payments: { id: null, appointmentId: '', paymentType: 'Numerar', amount: '' },
@@ -30,8 +30,20 @@ const statusStyle = {
   Anulat: ['#fee2e2', '#dc2626']
 };
 
+function useIsMobile() {
+  const [isMobile, setIsMobile] = useState(window.innerWidth < 900);
+  useEffect(() => {
+    const handler = () => setIsMobile(window.innerWidth < 900);
+    window.addEventListener('resize', handler);
+    return () => window.removeEventListener('resize', handler);
+  }, []);
+  return isMobile;
+}
+
 export default function AdminDashboard() {
   const { user, logout } = useAuth();
+  const isMobile = useIsMobile();
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   const [active, setActive] = useState('overview');
   const [data, setData] = useState({
     appointments: [], appointmentDetails: [], mechanics: [], customers: [],
@@ -56,32 +68,20 @@ export default function AdminDashboard() {
         appointments, appointmentDetails, mechanics, customers, vehicles, vehicleDetails,
         services, payments, paymentDetails, users, userDetails, roles
       ] = await Promise.all([
-        api.get('/appointments'),
-        api.get('/appointments/details'),
-        api.get('/mechanic'),
-        api.get('/customer'),
-        api.get('/vehicles'),
-        api.get('/vehicles/details'),
-        api.get('/services'),
-        api.get('/payments'),
-        api.get('/payments/details'),
-        api.get('/users'),
-        api.get('/users/details'),
-        api.get('/roles')
+        api.get('/appointments'), api.get('/appointments/details'),
+        api.get('/mechanic'), api.get('/customer'),
+        api.get('/vehicles'), api.get('/vehicles/details'),
+        api.get('/services'), api.get('/payments'),
+        api.get('/payments/details'), api.get('/users'),
+        api.get('/users/details'), api.get('/roles')
       ]);
       setData({
-        appointments: appointments.data || [],
-        appointmentDetails: appointmentDetails.data || [],
-        mechanics: mechanics.data || [],
-        customers: customers.data || [],
-        vehicles: vehicles.data || [],
-        vehicleDetails: vehicleDetails.data || [],
-        services: services.data || [],
-        payments: payments.data || [],
-        paymentDetails: paymentDetails.data || [],
-        users: users.data || [],
-        userDetails: userDetails.data || [],
-        roles: roles.data || []
+        appointments: appointments.data || [], appointmentDetails: appointmentDetails.data || [],
+        mechanics: mechanics.data || [], customers: customers.data || [],
+        vehicles: vehicles.data || [], vehicleDetails: vehicleDetails.data || [],
+        services: services.data || [], payments: payments.data || [],
+        paymentDetails: paymentDetails.data || [], users: users.data || [],
+        userDetails: userDetails.data || [], roles: roles.data || []
       });
     } catch {
       setError('Nu s-au putut încărca datele. Verifică dacă backend-ul rulează.');
@@ -93,64 +93,23 @@ export default function AdminDashboard() {
       ['Programat', 'În progres'].includes(a.status)).length;
     const now = new Date();
     const revenue = data.paymentDetails
-      .filter(p => {
-        const d = new Date(p.paymentDate);
-        return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
-      })
+      .filter(p => { const d = new Date(p.paymentDate); return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear(); })
       .reduce((sum, p) => sum + Number(p.amount || 0), 0);
     return { revenue, activeAppointments, mechanics: data.mechanics.length, customers: data.customers.length };
   }, [data]);
 
-  const setSearch = (section, value) =>
-    setSearches(prev => ({ ...prev, [section]: value }));
+  const setSearch = (section, value) => setSearches(prev => ({ ...prev, [section]: value }));
 
   const filtered = useMemo(() => {
-    const s = searches;
-    const q = key => s[key]?.toLowerCase() || '';
-
+    const q = key => searches[key]?.toLowerCase() || '';
     return {
-      appointments: data.appointmentDetails.filter(a =>
-        !q('appointments') ||
-        a.appointmentCode?.toLowerCase().includes(q('appointments')) ||
-        a.customer?.toLowerCase().includes(q('appointments')) ||
-        a.mechanic?.toLowerCase().includes(q('appointments')) ||
-        a.serviceName?.toLowerCase().includes(q('appointments')) ||
-        a.status?.toLowerCase().includes(q('appointments'))
-      ),
-      mechanics: data.mechanics.filter(m =>
-        !q('mechanics') ||
-        `${m.firstName} ${m.lastName}`.toLowerCase().includes(q('mechanics')) ||
-        m.email?.toLowerCase().includes(q('mechanics')) ||
-        m.phone?.includes(q('mechanics'))
-      ),
-      customers: data.customers.filter(c =>
-        !q('customers') ||
-        `${c.firstName} ${c.lastName}`.toLowerCase().includes(q('customers')) ||
-        c.email?.toLowerCase().includes(q('customers')) ||
-        c.phone?.includes(q('customers'))
-      ),
-      vehicles: data.vehicleDetails.filter(v =>
-        !q('vehicles') ||
-        v.licensePlate?.toLowerCase().includes(q('vehicles')) ||
-        v.brand?.toLowerCase().includes(q('vehicles')) ||
-        v.model?.toLowerCase().includes(q('vehicles')) ||
-        v.customer?.toLowerCase().includes(q('vehicles'))
-      ),
-      services: data.services.filter(s =>
-        !q('services') ||
-        s.name?.toLowerCase().includes(searches.services.toLowerCase()) ||
-        s.description?.toLowerCase().includes(searches.services.toLowerCase())
-      ),
-      payments: data.paymentDetails.filter(p =>
-        !q('payments') ||
-        p.appointmentCode?.toLowerCase().includes(q('payments')) ||
-        p.paymentType?.toLowerCase().includes(q('payments'))
-      ),
-      users: data.userDetails.filter(u =>
-        !q('users') ||
-        u.email?.toLowerCase().includes(q('users')) ||
-        u.name?.toLowerCase().includes(q('users'))
-      )
+      appointments: data.appointmentDetails.filter(a => !q('appointments') || a.appointmentCode?.toLowerCase().includes(q('appointments')) || a.customer?.toLowerCase().includes(q('appointments')) || a.mechanic?.toLowerCase().includes(q('appointments')) || a.serviceName?.toLowerCase().includes(q('appointments')) || a.status?.toLowerCase().includes(q('appointments'))),
+      mechanics: data.mechanics.filter(m => !q('mechanics') || `${m.firstName} ${m.lastName}`.toLowerCase().includes(q('mechanics')) || m.email?.toLowerCase().includes(q('mechanics')) || m.phone?.includes(q('mechanics'))),
+      customers: data.customers.filter(c => !q('customers') || `${c.firstName} ${c.lastName}`.toLowerCase().includes(q('customers')) || c.email?.toLowerCase().includes(q('customers')) || c.phone?.includes(q('customers'))),
+      vehicles: data.vehicleDetails.filter(v => !q('vehicles') || v.licensePlate?.toLowerCase().includes(q('vehicles')) || v.brand?.toLowerCase().includes(q('vehicles')) || v.model?.toLowerCase().includes(q('vehicles')) || v.customer?.toLowerCase().includes(q('vehicles'))),
+      services: data.services.filter(s => !q('services') || s.name?.toLowerCase().includes(q('services')) || s.description?.toLowerCase().includes(q('services'))),
+      payments: data.paymentDetails.filter(p => !q('payments') || p.appointmentCode?.toLowerCase().includes(q('payments')) || p.paymentType?.toLowerCase().includes(q('payments'))),
+      users: data.userDetails.filter(u => !q('users') || u.email?.toLowerCase().includes(q('users')) || u.name?.toLowerCase().includes(q('users')))
     };
   }, [data, searches]);
 
@@ -159,8 +118,7 @@ export default function AdminDashboard() {
   const isValidPhone = value => /^\d{8,15}$/.test(value);
 
   const setField = (section, field, value) => {
-    if ((section === 'mechanics' || section === 'customers') && field === 'phone')
-      value = normalizePhone(value);
+    if ((section === 'mechanics' || section === 'customers') && field === 'phone') value = normalizePhone(value);
     setForms(prev => ({ ...prev, [section]: { ...prev[section], [field]: value } }));
   };
 
@@ -168,24 +126,14 @@ export default function AdminDashboard() {
 
   const validateForm = (section, form) => {
     if (section === 'mechanics' || section === 'customers') {
-      if (!form.firstName || !form.lastName || !form.phone || !form.email) {
-        setError('Completează toate câmpurile.'); return false;
-      }
-      if (!isValidPhone(form.phone)) {
-        setError('Telefonul trebuie să conțină doar cifre și minim 8 caractere.'); return false;
-      }
-      if (!isValidEmail(form.email)) {
-        setError('Email-ul nu este valid.'); return false;
-      }
+      if (!form.firstName || !form.lastName || !form.phone || !form.email) { setError('Completează toate câmpurile.'); return false; }
+      if (!isValidPhone(form.phone)) { setError('Telefonul trebuie să conțină doar cifre și minim 8 caractere.'); return false; }
+      if (!isValidEmail(form.email)) { setError('Email-ul nu este valid.'); return false; }
     }
     if (section === 'users') {
       if (!form.email) { setError('Selectează un email.'); return false; }
-      if (!form.id && (!form.passwordHash || form.passwordHash.length < 8)) {
-        setError('Parola trebuie să aibă cel puțin 8 caractere.'); return false;
-      }
-      if (form.passwordHash && form.passwordHash.length > 0 && form.passwordHash.length < 8) {
-        setError('Parola trebuie să aibă cel puțin 8 caractere.'); return false;
-      }
+      if (!form.id && (!form.passwordHash || form.passwordHash.length < 8)) { setError('Parola trebuie să aibă cel puțin 8 caractere.'); return false; }
+      if (form.passwordHash && form.passwordHash.length > 0 && form.passwordHash.length < 8) { setError('Parola trebuie să aibă cel puțin 8 caractere.'); return false; }
     }
     return true;
   };
@@ -205,83 +153,53 @@ export default function AdminDashboard() {
       await loadData();
     } catch (err) {
       setError(typeof err?.response?.data === 'string' ? err.response.data : 'Operația nu a reușit.');
-    } finally {
-      setLoading(false);
-    }
+    } finally { setLoading(false); }
   };
 
   const remove = async (section, id) => {
     if (!window.confirm('Sigur vrei să ștergi această înregistrare?')) return;
-    setLoading(true);
-    setError('');
+    setLoading(true); setError('');
     try {
       await api.delete(`${endpoints[section]}/${id}`);
       setMessage('Înregistrarea a fost ștearsă.');
       setTimeout(() => setMessage(''), 2200);
       await loadData();
-    } catch {
-      setError('Ștergerea nu a reușit. Posibil înregistrarea este folosită în altă tabelă.');
-    } finally {
-      setLoading(false);
-    }
+    } catch { setError('Ștergerea nu a reușit. Posibil înregistrarea este folosită în altă tabelă.'); }
+    finally { setLoading(false); }
   };
 
   const edit = (section, item) => {
-    if (section === 'appointments') {
-      setForms(prev => ({ ...prev, appointments: {
-        id: item.id, customerId: item.customerId || '',
-        vehicleId: item.vehicleId || '', mechanicId: item.mechanicId || '',
-        serviceId: item.serviceId || '', scheduledDate: toInputDate(item.scheduledDate),
-        problemDescription: item.problemDescription || '', status: item.status || 'Programat'
-      }}));
-      return;
-    }
-    if (section === 'payments') {
-      setForms(prev => ({ ...prev, payments: {
-        id: item.id, appointmentId: item.appointmentId || '',
-        paymentType: item.paymentType || 'Numerar', amount: item.amount || ''
-      }}));
-      return;
-    }
-    if (section === 'users') {
-      setForms(prev => ({ ...prev, users: {
-        id: item.id, email: item.email || '',
-        passwordHash: '', roleId: item.roleId || 2, isActive: item.isActive ?? true
-      }}));
-      return;
-    }
+    if (section === 'appointments') { setForms(prev => ({ ...prev, appointments: { id: item.id, customerId: item.customerId || '', vehicleId: item.vehicleId || '', mechanicId: item.mechanicId || '', serviceId: item.serviceId || '', scheduledDate: toInputDate(item.scheduledDate), problemDescription: item.problemDescription || '', status: item.status || 'Programat' } })); return; }
+    if (section === 'payments') { setForms(prev => ({ ...prev, payments: { id: item.id, appointmentId: item.appointmentId || '', paymentType: item.paymentType || 'Numerar', amount: item.amount || '' } })); return; }
+    if (section === 'users') { setForms(prev => ({ ...prev, users: { id: item.id, email: item.email || '', passwordHash: '', roleId: item.roleId || 2, isActive: item.isActive ?? true } })); return; }
     setForms(prev => ({ ...prev, [section]: { ...prev[section], ...item } }));
   };
 
   const availableUserEmails = useMemo(() => {
     const existingEmails = new Set(data.users.map(u => u.email?.toLowerCase()));
-    const customers = data.customers
-      .filter(c => c.email && !existingEmails.has(c.email.toLowerCase()))
-      .map(c => ({ email: c.email, label: `${c.email} – Client: ${c.firstName} ${c.lastName}` }));
-    const mechanics = data.mechanics
-      .filter(m => m.email && !existingEmails.has(m.email.toLowerCase()))
-      .map(m => ({ email: m.email, label: `${m.email} – Mecanic: ${m.firstName} ${m.lastName}` }));
+    const customers = data.customers.filter(c => c.email && !existingEmails.has(c.email.toLowerCase())).map(c => ({ email: c.email, label: `${c.email} – Client: ${c.firstName} ${c.lastName}` }));
+    const mechanics = data.mechanics.filter(m => m.email && !existingEmails.has(m.email.toLowerCase())).map(m => ({ email: m.email, label: `${m.email} – Mecanic: ${m.firstName} ${m.lastName}` }));
     return [...customers, ...mechanics];
   }, [data.customers, data.mechanics, data.users]);
 
+  const navigateTo = key => { setActive(key); if (isMobile) setSidebarOpen(false); };
+
   const renderOverview = () => {
-    const recent = [...data.appointmentDetails]
-      .sort((a, b) => new Date(b.scheduledDate) - new Date(a.scheduledDate))
-      .slice(0, 5);
+    const recent = [...data.appointmentDetails].sort((a, b) => new Date(b.scheduledDate) - new Date(a.scheduledDate)).slice(0, 5);
     return (
       <>
-        <div style={statsGrid}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 16, marginBottom: 28 }}>
           <StatCard icon={<MoneyIcon />} title={`Venit — ${monthName(new Date().getMonth() + 1)}`} value={`${stats.revenue.toLocaleString('ro-MD')} MDL`} accent="#16a34a" />
           <StatCard icon={<PulseIcon />} title="Programări active" value={stats.activeAppointments} accent="#2563eb" />
           <StatCard icon={<ToolIcon />} title="Mecanici" value={stats.mechanics} accent="#9333ea" />
           <StatCard icon={<UsersIcon />} title="Clienți" value={stats.customers} accent="#f97316" />
         </div>
         <Panel title="Ultimele 5 programări">
-          <ScrollTable headers={['Cod / Serviciu', 'Client', 'Vehicul', 'Mecanic', 'Data', 'Status']}>
+          <ScrollTable headers={['Cod / Serviciu', 'Client', 'Data', 'Status']}>
             {recent.map(a => (
               <tr key={a.id}>
                 <Td><b>{a.serviceName}</b><div style={muted}>{a.appointmentCode}</div></Td>
-                <Td>{a.customer}</Td><Td>{a.licensePlate}</Td><Td>{a.mechanic}</Td>
+                <Td>{a.customer}</Td>
                 <Td>{formatDate(a.scheduledDate)}</Td>
                 <Td><Status value={a.status} /></Td>
               </tr>
@@ -297,14 +215,10 @@ export default function AdminDashboard() {
     return (
       <div style={{ display: 'grid', gap: 22 }}>
         <Panel title={`${titles[active]} — formular`}>
-          <div style={{ padding: 20 }}>{renderForm(active)}</div>
+          <div style={{ padding: isMobile ? 14 : 20 }}>{renderForm(active)}</div>
         </Panel>
         <Panel title={`${titles[active]} — listă`}>
-          <SearchBar
-            value={searches[active]}
-            onChange={v => setSearch(active, v)}
-            placeholder={searchPlaceholders[active]}
-          />
+          <SearchBar value={searches[active]} onChange={v => setSearch(active, v)} placeholder={searchPlaceholders[active]} />
           {renderTable(active)}
         </Panel>
       </div>
@@ -323,10 +237,11 @@ export default function AdminDashboard() {
 
   const renderTable = section => {
     if (section === 'appointments') return (
-      <ScrollTable headers={['Cod', 'Client', 'Vehicul', 'Mecanic', 'Serviciu', 'Data', 'Status', 'Acțiuni']}>
+      <ScrollTable headers={['Cod', 'Client', 'Mecanic', 'Data', 'Status', 'Acțiuni']}>
         {filtered.appointments.map(a => <tr key={a.id}>
-          <Td>{a.appointmentCode}</Td><Td>{a.customer}</Td><Td>{a.licensePlate}</Td>
-          <Td>{a.mechanic}</Td><Td>{a.serviceName}</Td><Td>{formatDate(a.scheduledDate)}</Td>
+          <Td><b>{a.appointmentCode}</b><div style={muted}>{a.serviceName}</div></Td>
+          <Td>{a.customer}</Td><Td>{a.mechanic}</Td>
+          <Td>{formatDate(a.scheduledDate)}</Td>
           <Td><Status value={a.status} /></Td>
           <Td><Actions onEdit={() => edit('appointments', data.appointments.find(x => x.id === a.id) || a)} onDelete={() => remove('appointments', a.id)} /></Td>
         </tr>)}
@@ -349,9 +264,11 @@ export default function AdminDashboard() {
       </ScrollTable>
     );
     if (section === 'vehicles') return (
-      <ScrollTable headers={['Număr', 'Marcă', 'Model', 'Serie', 'Client', 'Acțiuni']}>
+      <ScrollTable headers={['Număr', 'Marcă / Model', 'Client', 'Acțiuni']}>
         {filtered.vehicles.map(v => <tr key={v.id}>
-          <Td>{v.licensePlate}</Td><Td>{v.brand}</Td><Td>{v.model}</Td><Td>{v.series}</Td><Td>{v.customer}</Td>
+          <Td>{v.licensePlate}</Td>
+          <Td>{v.brand} {v.model}<div style={muted}>{v.series}</div></Td>
+          <Td>{v.customer}</Td>
           <Td><Actions onEdit={() => edit('vehicles', data.vehicles.find(x => x.id === v.id) || v)} onDelete={() => remove('vehicles', v.id)} /></Td>
         </tr>)}
       </ScrollTable>
@@ -386,26 +303,72 @@ export default function AdminDashboard() {
   };
 
   return (
-    <div style={page}>
-      <aside style={sidebar}>
-        <div style={brand}><div style={brandIcon}>A</div><b>ADMIN<span style={{ color: '#2563eb' }}>PANEL</span></b></div>
-        <nav style={{ display: 'grid', gap: 8 }}>
+    <div style={{ minHeight: '100vh', display: 'flex', background: '#f5f6f8', color: '#081225', fontFamily: 'Segoe UI, sans-serif' }}>
+
+      {/* Overlay mobile */}
+      {isMobile && sidebarOpen && (
+        <div onClick={() => setSidebarOpen(false)} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)', zIndex: 40 }} />
+      )}
+
+      {/* Sidebar */}
+      <aside style={{
+        width: 230, background: '#fff', borderRight: '1px solid #e5e7eb',
+        padding: 22, display: 'flex', flexDirection: 'column',
+        position: 'fixed', top: 0, left: isMobile ? (sidebarOpen ? 0 : -260) : 0,
+        height: '100vh', zIndex: 50, transition: 'left 0.25s ease',
+        overflowY: 'auto'
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 32 }}>
+          <div style={{ width: 36, height: 36, borderRadius: 8, background: '#0f172a', color: '#60a5fa', display: 'grid', placeItems: 'center', fontWeight: 900 }}>A</div>
+          <b>ADMIN<span style={{ color: '#2563eb' }}>PANEL</span></b>
+        </div>
+        <nav style={{ display: 'grid', gap: 6 }}>
           {menuItems.map(([key, label]) => (
-            <button key={key} onClick={() => setActive(key)} style={active === key ? navActive : navButton}>{label}</button>
+            <button key={key} onClick={() => navigateTo(key)} style={{
+              border: 'none', textAlign: 'left', padding: '12px 14px', borderRadius: 6,
+              cursor: 'pointer', fontWeight: 700, fontSize: 14,
+              color: active === key ? '#fff' : '#475569',
+              background: active === key ? '#0f172a' : 'transparent'
+            }}>{label}</button>
           ))}
         </nav>
-        <div style={{ marginTop: 'auto', display: 'grid', gap: 8 }}>
-          <button onClick={() => window.location.href = '/'} style={bottomButton}>Pagina principală</button>
-          <button onClick={() => { logout(); window.location.href = '/login'; }} style={bottomButton}>Deconectare</button>
+        <div style={{ marginTop: 'auto', paddingTop: 16 }}>
+          <button onClick={() => { logout(); window.location.href = '/login'; }} style={{
+            border: 'none', background: 'transparent', textAlign: 'left',
+            color: '#64748b', fontWeight: 700, padding: '10px 12px', cursor: 'pointer', width: '100%'
+          }}>Deconectare</button>
         </div>
       </aside>
 
-      <main style={{ flex: 1, minWidth: 0 }}>
-        <header style={header}>
-          <div style={{ fontSize: 13, fontWeight: 900, letterSpacing: 4 }}>SISTEM ADMINISTRARE AUTOPRO</div>
-          <div style={avatar}>{user?.email?.slice(0, 2).toUpperCase() || 'AD'}</div>
+      {/* Main */}
+      <main style={{ flex: 1, minWidth: 0, marginLeft: isMobile ? 0 : 230 }}>
+        {/* Header */}
+        <header style={{
+          height: 64, background: '#fff', borderBottom: '1px solid #e5e7eb',
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+          padding: '0 24px', position: 'sticky', top: 0, zIndex: 30
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+            {isMobile && (
+              <button onClick={() => setSidebarOpen(!sidebarOpen)} style={{
+                border: 'none', background: 'none', cursor: 'pointer', padding: 4,
+                display: 'flex', flexDirection: 'column', gap: 5
+              }}>
+                <span style={{ width: 22, height: 2, background: '#0f172a', display: 'block', borderRadius: 2 }} />
+                <span style={{ width: 22, height: 2, background: '#0f172a', display: 'block', borderRadius: 2 }} />
+                <span style={{ width: 22, height: 2, background: '#0f172a', display: 'block', borderRadius: 2 }} />
+              </button>
+            )}
+            <span style={{ fontSize: isMobile ? 11 : 13, fontWeight: 900, letterSpacing: isMobile ? 1 : 3, color: '#0f172a' }}>
+              SISTEM ADMINISTRARE AUTOPRO
+            </span>
+          </div>
+          <div style={{ width: 36, height: 36, borderRadius: '50%', background: '#0f172a', color: '#fff', display: 'grid', placeItems: 'center', fontWeight: 900, fontSize: 12 }}>
+            {user?.email?.slice(0, 2).toUpperCase() || 'AD'}
+          </div>
         </header>
-        <section style={{ padding: 32 }}>
+
+        <section style={{ padding: isMobile ? 16 : 32 }}>
           {error && <Alert type="error">{error}</Alert>}
           {message && <Alert type="success">{message}</Alert>}
           {renderSection()}
@@ -415,12 +378,10 @@ export default function AdminDashboard() {
   );
 }
 
-//  Componente formular 
+// ── Forme ────────────────────────────────────────────────────────────────────
 
 function AppointmentForm({ form, data, setField, save, resetForm, loading }) {
-  const availableVehicles = form.customerId
-    ? data.vehicles.filter(v => String(v.customerId) === String(form.customerId))
-    : [];
+  const availableVehicles = form.customerId ? data.vehicles.filter(v => String(v.customerId) === String(form.customerId)) : [];
   return <FormGrid>
     <Select label="Client" value={form.customerId} onChange={v => { setField('appointments', 'customerId', v); setField('appointments', 'vehicleId', ''); }}>
       <option value="">Alege client</option>
@@ -488,13 +449,11 @@ function PaymentForm({ form, data, setField, save, resetForm, loading }) {
       setField('payments', 'amount', appt ? String(appt.servicePrice) : '');
     }}>
       <option value="">Alege programare</option>
-      {data.appointments
-  .filter(a => {
-    const detail = data.appointmentDetails.find(d => d.id === a.id);
-    const alreadyPaid = data.payments.some(p => p.appointmentId === a.id);
-    return detail?.status === 'Complet' && !alreadyPaid;
-  })
-  .map(a => <option key={a.id} value={a.id}>{a.appointmentCode}</option>)}
+      {data.appointments.filter(a => {
+        const detail = data.appointmentDetails.find(d => d.id === a.id);
+        const alreadyPaid = data.payments.some(p => p.appointmentId === a.id);
+        return detail?.status === 'Complet' && !alreadyPaid;
+      }).map(a => <option key={a.id} value={a.id}>{a.appointmentCode}</option>)}
     </Select>
     <Select label="Tip" value={form.paymentType} onChange={v => setField('payments', 'paymentType', v)}>
       <option>Numerar</option><option>Card</option>
@@ -509,9 +468,7 @@ function UserForm({ form, data, availableEmails, setField, save, resetForm, load
     {!form.id ? (
       <Select label="Email" value={form.email} onChange={v => setField('users', 'email', v)}>
         <option value="">Selectează email</option>
-        {availableEmails.length > 0
-          ? availableEmails.map(item => <option key={item.email} value={item.email}>{item.label}</option>)
-          : <option disabled>Nu sunt emailuri disponibile</option>}
+        {availableEmails.length > 0 ? availableEmails.map(item => <option key={item.email} value={item.email}>{item.label}</option>) : <option disabled>Nu sunt emailuri disponibile</option>}
       </Select>
     ) : (
       <Input label="Email" type="email" value={form.email} onChange={() => {}} disabled />
@@ -527,41 +484,16 @@ function UserForm({ form, data, availableEmails, setField, save, resetForm, load
   </FormGrid>;
 }
 
-// Helpers 
+// ── Helpers ──────────────────────────────────────────────────────────────────
 
-const endpoints = {
-  appointments: '/appointments', mechanics: '/mechanic', customers: '/customer',
-  vehicles: '/vehicles', services: '/services', payments: '/payments', users: '/users'
-};
-
-const titles = {
-  appointments: 'Programări', mechanics: 'Mecanici', customers: 'Clienți',
-  vehicles: 'Vehicule', services: 'Servicii', payments: 'Plăți', users: 'Utilizatori'
-};
-
-const searchPlaceholders = {
-  appointments: 'Caută după cod, client, mecanic, serviciu, status...',
-  mechanics: 'Caută după nume, email, telefon...',
-  customers: 'Caută după nume, email, telefon...',
-  vehicles: 'Caută după număr, marcă, model, client...',
-  services: 'Caută după denumire sau descriere...',
-  payments: 'Caută după cod programare sau tip plată...',
-  users: 'Caută după email sau rol...'
-};
+const endpoints = { appointments: '/appointments', mechanics: '/mechanic', customers: '/customer', vehicles: '/vehicles', services: '/services', payments: '/payments', users: '/users' };
+const titles = { appointments: 'Programări', mechanics: 'Mecanici', customers: 'Clienți', vehicles: 'Vehicule', services: 'Servicii', payments: 'Plăți', users: 'Utilizatori' };
+const searchPlaceholders = { appointments: 'Caută după cod, client, mecanic, status...', mechanics: 'Caută după nume, email, telefon...', customers: 'Caută după nume, email, telefon...', vehicles: 'Caută după număr, marcă, model, client...', services: 'Caută după denumire sau descriere...', payments: 'Caută după cod programare sau tip plată...', users: 'Caută după email sau rol...' };
 
 function toPayload(section, form) {
-  if (section === 'appointments') return {
-    customerId: Number(form.customerId), vehicleId: Number(form.vehicleId),
-    mechanicId: Number(form.mechanicId), serviceId: Number(form.serviceId),
-    scheduledDate: form.scheduledDate, problemDescription: form.problemDescription || null, status: form.status
-  };
-  if (section === 'mechanics' || section === 'customers') return {
-    firstName: form.firstName, lastName: form.lastName, phone: form.phone, email: form.email
-  };
-  if (section === 'vehicles') return {
-    licensePlate: form.licensePlate, brand: form.brand, model: form.model,
-    series: form.series, customerId: Number(form.customerId)
-  };
+  if (section === 'appointments') return { customerId: Number(form.customerId), vehicleId: Number(form.vehicleId), mechanicId: Number(form.mechanicId), serviceId: Number(form.serviceId), scheduledDate: form.scheduledDate, problemDescription: form.problemDescription || null, status: form.status };
+  if (section === 'mechanics' || section === 'customers') return { firstName: form.firstName, lastName: form.lastName, phone: form.phone, email: form.email };
+  if (section === 'vehicles') return { licensePlate: form.licensePlate, brand: form.brand, model: form.model, series: form.series, customerId: Number(form.customerId) };
   if (section === 'services') return { name: form.name, description: form.description, price: Number(form.price) };
   if (section === 'payments') return { appointmentId: Number(form.appointmentId), paymentType: form.paymentType, amount: Number(form.amount) };
   if (section === 'users') return { email: form.email, passwordHash: form.passwordHash, roleId: Number(form.roleId), isActive: Boolean(form.isActive) };
@@ -581,52 +513,50 @@ function formatDate(value) {
 }
 
 function monthName(month) {
-  const months = ['Ianuarie', 'Februarie', 'Martie', 'Aprilie', 'Mai', 'Iunie',
-    'Iulie', 'August', 'Septembrie', 'Octombrie', 'Noiembrie', 'Decembrie'];
+  const months = ['Ianuarie', 'Februarie', 'Martie', 'Aprilie', 'Mai', 'Iunie', 'Iulie', 'August', 'Septembrie', 'Octombrie', 'Noiembrie', 'Decembrie'];
   return months[month - 1];
 }
 
-// UI Components 
+// ── UI ────────────────────────────────────────────────────────────────────────
 
 function SearchBar({ value, onChange, placeholder }) {
   return (
-    <div style={{ padding: '14px 20px', borderBottom: '1px solid #f1f5f9', display: 'flex', alignItems: 'center', gap: 10 }}>
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
-      </svg>
-      <input
-        value={value} onChange={e => onChange(e.target.value)}
-        placeholder={placeholder}
-        style={{ border: 'none', outline: 'none', fontSize: 14, width: '100%', color: '#1a1a2e', background: 'transparent' }}
-      />
-      {value && (
-        <span onClick={() => onChange('')} style={{ cursor: 'pointer', color: '#94a3b8', fontSize: 18, lineHeight: 1 }}>×</span>
-      )}
+    <div style={{ padding: '12px 18px', borderBottom: '1px solid #f1f5f9', display: 'flex', alignItems: 'center', gap: 10 }}>
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8" /><path d="m21 21-4.35-4.35" /></svg>
+      <input value={value} onChange={e => onChange(e.target.value)} placeholder={placeholder} style={{ border: 'none', outline: 'none', fontSize: 14, width: '100%', color: '#1a1a2e', background: 'transparent' }} />
+      {value && <span onClick={() => onChange('')} style={{ cursor: 'pointer', color: '#94a3b8', fontSize: 20, lineHeight: 1 }}>×</span>}
     </div>
   );
 }
 
 function Status({ value }) {
   const [bg, color] = statusStyle[value] || ['#e5e7eb', '#374151'];
-  return <span style={{ background: bg, color, padding: '5px 10px', borderRadius: 999, fontSize: 11, fontWeight: 800, whiteSpace: 'nowrap', textTransform: 'uppercase' }}>{value}</span>;
+  return <span style={{ background: bg, color, padding: '4px 10px', borderRadius: 999, fontSize: 11, fontWeight: 800, whiteSpace: 'nowrap', textTransform: 'uppercase' }}>{value}</span>;
 }
 
 function StatCard({ icon, title, value, accent }) {
-  return <div style={statCard}>
-    <div style={{ ...statIcon, background: `${accent}14`, color: accent }}>{icon}</div>
-    <div style={{ fontSize: 28, fontWeight: 900 }}>{value}</div>
-    <div style={statTitle}>{title}</div>
-  </div>;
+  return (
+    <div style={{ background: '#fff', border: '1px solid #e5e7eb', borderRadius: 10, padding: '22px 20px' }}>
+      <div style={{ width: 40, height: 40, borderRadius: 8, background: `${accent}14`, color: accent, display: 'grid', placeItems: 'center', marginBottom: 14 }}>{icon}</div>
+      <div style={{ fontSize: 26, fontWeight: 900 }}>{value}</div>
+      <div style={{ fontSize: 11, color: '#94a3b8', fontWeight: 700, letterSpacing: 1, textTransform: 'uppercase', marginTop: 4 }}>{title}</div>
+    </div>
+  );
 }
 
 function Panel({ title, children }) {
-  return <div><h2 style={{ fontSize: 20, fontWeight: 900, marginBottom: 16 }}>{title}</h2><div style={panel}>{children}</div></div>;
+  return (
+    <div>
+      <h2 style={{ fontSize: 18, fontWeight: 900, marginBottom: 14 }}>{title}</h2>
+      <div style={{ background: '#fff', border: '1px solid #e5e7eb', borderRadius: 10, overflow: 'hidden' }}>{children}</div>
+    </div>
+  );
 }
 
 function ScrollTable({ headers, children }) {
   return (
-    <div style={{ maxHeight: 420, overflowY: 'auto' }}>
-      <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+    <div style={{ overflowX: 'auto', maxHeight: 420, overflowY: 'auto' }}>
+      <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: 500 }}>
         <thead style={{ position: 'sticky', top: 0, zIndex: 1 }}>
           <tr>{headers.map(h => <Th key={h}>{h}</Th>)}</tr>
         </thead>
@@ -637,76 +567,65 @@ function ScrollTable({ headers, children }) {
 }
 
 function FormGrid({ children }) {
-  return <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, minmax(160px, 1fr))', gap: 14, alignItems: 'end' }}>{children}</div>;
+  return <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 14, alignItems: 'end' }}>{children}</div>;
 }
 
 function Input({ label, type = 'text', value, onChange, disabled }) {
-  return <label style={fieldWrap}>
-    <span style={labelStyle}>{label}</span>
-    <input disabled={disabled} type={type} value={value ?? ''} onChange={e => onChange(e.target.value)}
-      style={{ ...inputStyle, background: disabled ? '#f9fafb' : '#fff' }} />
-  </label>;
+  return (
+    <label style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+      <span style={{ fontSize: 11, color: '#64748b', fontWeight: 700, letterSpacing: 0.8, textTransform: 'uppercase' }}>{label}</span>
+      <input disabled={disabled} type={type} value={value ?? ''} onChange={e => onChange(e.target.value)}
+        style={{ height: 42, border: '1px solid #e5e7eb', borderRadius: 6, padding: '0 12px', outline: 'none', fontSize: 14, background: disabled ? '#f9fafb' : '#fff', width: '100%', boxSizing: 'border-box' }} />
+    </label>
+  );
 }
 
 function Select({ label, value, onChange, children, disabled }) {
-  return <label style={fieldWrap}>
-    <span style={labelStyle}>{label}</span>
-    <select disabled={disabled} value={value ?? ''} onChange={e => onChange(e.target.value)}
-      style={{ ...inputStyle, background: disabled ? '#f9fafb' : '#fff' }}>{children}</select>
-  </label>;
+  return (
+    <label style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+      <span style={{ fontSize: 11, color: '#64748b', fontWeight: 700, letterSpacing: 0.8, textTransform: 'uppercase' }}>{label}</span>
+      <select disabled={disabled} value={value ?? ''} onChange={e => onChange(e.target.value)}
+        style={{ height: 42, border: '1px solid #e5e7eb', borderRadius: 6, padding: '0 12px', outline: 'none', fontSize: 14, background: disabled ? '#f9fafb' : '#fff', width: '100%', boxSizing: 'border-box' }}>{children}</select>
+    </label>
+  );
 }
 
 function Buttons({ loading, isEdit, onSave, onCancel }) {
-  return <div style={{ display: 'flex', gap: 10 }}>
-    <button onClick={onSave} disabled={loading} style={primaryButton}>{loading ? 'Se salvează...' : isEdit ? 'Actualizează' : 'Adaugă'}</button>
-    {isEdit && <button onClick={onCancel} style={secondaryButton}>Anulează</button>}
-  </div>;
+  return (
+    <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+      <button onClick={onSave} disabled={loading} style={{ height: 42, border: 'none', borderRadius: 6, padding: '0 18px', background: '#2563eb', color: '#fff', fontWeight: 800, cursor: 'pointer', whiteSpace: 'nowrap' }}>
+        {loading ? 'Se salvează...' : isEdit ? 'Actualizează' : 'Adaugă'}
+      </button>
+      {isEdit && <button onClick={onCancel} style={{ height: 42, border: '1px solid #e5e7eb', borderRadius: 6, padding: '0 18px', background: '#fff', color: '#475569', fontWeight: 800, cursor: 'pointer' }}>Anulează</button>}
+    </div>
+  );
 }
 
 function Actions({ onEdit, onDelete }) {
-  return <div style={{ display: 'flex', gap: 8 }}>
-    <button onClick={onEdit} style={smallButton}>Edit</button>
-    <button onClick={onDelete} style={{ ...smallButton, color: '#dc2626', borderColor: '#fecaca' }}>Delete</button>
-  </div>;
+  return (
+    <div style={{ display: 'flex', gap: 8 }}>
+      <button onClick={onEdit} style={{ border: '1px solid #dbeafe', background: '#fff', color: '#2563eb', borderRadius: 8, padding: '6px 10px', cursor: 'pointer', fontWeight: 800, fontSize: 12 }}>Edit</button>
+      <button onClick={onDelete} style={{ border: '1px solid #fecaca', background: '#fff', color: '#dc2626', borderRadius: 8, padding: '6px 10px', cursor: 'pointer', fontWeight: 800, fontSize: 12 }}>Delete</button>
+    </div>
+  );
 }
 
 function Th({ children }) {
-  return <th style={{ padding: '14px 20px', background: '#f5f6f8', color: '#94a3b8', fontSize: 11, letterSpacing: 1, textTransform: 'uppercase', textAlign: 'left', whiteSpace: 'nowrap' }}>{children}</th>;
+  return <th style={{ padding: '12px 18px', background: '#f5f6f8', color: '#94a3b8', fontSize: 11, letterSpacing: 1, textTransform: 'uppercase', textAlign: 'left', whiteSpace: 'nowrap' }}>{children}</th>;
 }
 
 function Td({ children }) {
-  return <td style={{ padding: '16px 20px', borderTop: '1px solid #f1f5f9', fontSize: 14, verticalAlign: 'middle' }}>{children}</td>;
+  return <td style={{ padding: '14px 18px', borderTop: '1px solid #f1f5f9', fontSize: 14, verticalAlign: 'middle' }}>{children}</td>;
 }
 
 function Alert({ type, children }) {
-  const error = type === 'error';
-  return <div style={{ background: error ? '#fef2f2' : '#f0fdf4', border: `1px solid ${error ? '#fecaca' : '#bbf7d0'}`, color: error ? '#b91c1c' : '#15803d', padding: 14, borderRadius: 6, marginBottom: 18 }}>{children}</div>;
+  const err = type === 'error';
+  return <div style={{ background: err ? '#fef2f2' : '#f0fdf4', border: `1px solid ${err ? '#fecaca' : '#bbf7d0'}`, color: err ? '#b91c1c' : '#15803d', padding: 14, borderRadius: 8, marginBottom: 18, fontSize: 14 }}>{children}</div>;
 }
 
-function MoneyIcon() { return <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 2v20" /><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7H14a3.5 3.5 0 0 1 0 7H6" /></svg>; }
-function PulseIcon() { return <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M3 12h4l3-8 4 16 3-8h4" /></svg>; }
-function ToolIcon() { return <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.2-3.2a6 6 0 0 1-7.8 7.8l-6.2 6.2a2.1 2.1 0 0 1-3-3l6.2-6.2a6 6 0 0 1 7.8-7.8z" /></svg>; }
-function UsersIcon() { return <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="M22 21v-2a4 4 0 0 0-3-3.87" /><path d="M16 3.13a4 4 0 0 1 0 7.75" /></svg>; }
+const muted = { color: '#64748b', fontSize: 12, marginTop: 3 };
 
-// Stiluri
-const page = { minHeight: '100vh', display: 'flex', background: '#f5f6f8', color: '#081225', fontFamily: 'Segoe UI, sans-serif' };
-const sidebar = { width: 230, background: '#fff', borderRight: '1px solid #e5e7eb', padding: 22, display: 'flex', flexDirection: 'column', position: 'sticky', top: 0, height: '100vh' };
-const brand = { display: 'flex', alignItems: 'center', gap: 10, marginBottom: 32 };
-const brandIcon = { width: 36, height: 36, borderRadius: 8, background: '#0f172a', color: '#60a5fa', display: 'grid', placeItems: 'center', fontWeight: 900 };
-const navButton = { border: 'none', textAlign: 'left', padding: '13px 14px', borderRadius: 6, cursor: 'pointer', fontWeight: 700, color: '#475569', background: 'transparent' };
-const navActive = { ...navButton, color: '#fff', background: '#0f172a' };
-const bottomButton = { border: 'none', background: 'transparent', textAlign: 'left', color: '#64748b', fontWeight: 700, padding: '10px 12px', cursor: 'pointer' };
-const header = { height: 72, background: '#fff', borderBottom: '1px solid #e5e7eb', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 32px' };
-const avatar = { width: 38, height: 38, borderRadius: '50%', background: '#0f172a', color: '#fff', display: 'grid', placeItems: 'center', fontWeight: 900, fontSize: 12 };
-const statsGrid = { display: 'grid', gridTemplateColumns: 'repeat(4, minmax(0, 1fr))', gap: 18, marginBottom: 30 };
-const statCard = { background: '#fff', border: '1px solid #e5e7eb', borderRadius: 8, padding: 26 };
-const statIcon = { width: 42, height: 42, borderRadius: 8, display: 'grid', placeItems: 'center', marginBottom: 18 };
-const statTitle = { fontSize: 11, color: '#94a3b8', fontWeight: 900, letterSpacing: 1.2, textTransform: 'uppercase', marginTop: 6 };
-const panel = { background: '#fff', border: '1px solid #e5e7eb', borderRadius: 8, overflow: 'hidden' };
-const muted = { color: '#64748b', fontSize: 12, marginTop: 4 };
-const fieldWrap = { display: 'flex', flexDirection: 'column', gap: 6 };
-const labelStyle = { fontSize: 11, color: '#64748b', fontWeight: 900, letterSpacing: 0.8, textTransform: 'uppercase' };
-const inputStyle = { height: 42, border: '1px solid #e5e7eb', borderRadius: 6, padding: '0 12px', outline: 'none', fontSize: 14, width: '100%' };
-const primaryButton = { height: 42, border: 'none', borderRadius: 6, padding: '0 16px', background: '#2563eb', color: '#fff', fontWeight: 800, cursor: 'pointer', whiteSpace: 'nowrap' };
-const secondaryButton = { height: 42, border: '1px solid #e5e7eb', borderRadius: 6, padding: '0 16px', background: '#fff', color: '#475569', fontWeight: 800, cursor: 'pointer' };
-const smallButton = { border: '1px solid #dbeafe', background: '#fff', color: '#2563eb', borderRadius: 8, padding: '7px 10px', cursor: 'pointer', fontWeight: 800, fontSize: 12 };
+function MoneyIcon() { return <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 2v20" /><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7H14a3.5 3.5 0 0 1 0 7H6" /></svg>; }
+function PulseIcon() { return <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M3 12h4l3-8 4 16 3-8h4" /></svg>; }
+function ToolIcon() { return <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.2-3.2a6 6 0 0 1-7.8 7.8l-6.2 6.2a2.1 2.1 0 0 1-3-3l6.2-6.2a6 6 0 0 1 7.8-7.8z" /></svg>; }
+function UsersIcon() { return <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="M22 21v-2a4 4 0 0 0-3-3.87" /><path d="M16 3.13a4 4 0 0 1 0 7.75" /></svg>; }
