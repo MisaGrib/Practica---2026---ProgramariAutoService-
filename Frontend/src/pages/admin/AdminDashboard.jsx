@@ -118,6 +118,7 @@ export default function AdminDashboard() {
   const normalizePhone = value => (value || '').replace(/\D/g, '');
   const isValidEmail = value => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
   const isValidPhone = value => /^\d{8,15}$/.test(value);
+
   const getServiceDurationMinutes = service => {
     if (!service) return 60;
     const name = (service.name || '').toLowerCase();
@@ -127,6 +128,7 @@ export default function AdminDashboard() {
     if (Number(service.price || 0) >= 2500) return 180;
     return 90;
   };
+
   const isWithinWorkingHours = (date, durationMinutes) => {
     const day = date.getDay();
     if (day === 0) return false;
@@ -134,6 +136,20 @@ export default function AdminDashboard() {
     const endMinutes = startMinutes + durationMinutes;
     if (day === 6) return startMinutes >= 9 * 60 && endMinutes <= 14 * 60;
     return startMinutes >= 8 * 60 && endMinutes <= 18 * 60;
+  };
+
+  const hasMechanicScheduleConflict = (scheduledDate, durationMinutes, mechanicId, appointments, services, excludeId = null) => {
+    const newStart = new Date(scheduledDate);
+    const newEnd = new Date(newStart.getTime() + durationMinutes * 60000);
+    return appointments
+      .filter(a => String(a.mechanicId) === String(mechanicId) && a.status !== 'Anulat' && (!excludeId || a.id !== excludeId))
+      .some(a => {
+        const existingStart = new Date(a.scheduledDate);
+        const service = services.find(s => s.id === a.serviceId);
+        const dur = getServiceDurationMinutes(service);
+        const existingEnd = new Date(existingStart.getTime() + dur * 60000);
+        return newStart < existingEnd && existingStart < newEnd;
+      });
   };
 
   const setField = (section, field, value) => {
@@ -171,7 +187,7 @@ export default function AdminDashboard() {
         return false;
       }
       const service = data.services.find(s => String(s.id) === String(form.serviceId));
-      if (!isWithinWorkingHours(scheduled, getServiceDurationMinutes(service))) {
+      if (dateChanged && !isWithinWorkingHours(scheduled, getServiceDurationMinutes(service))) {
         setError('Programarea trebuie să fie în orar: luni-vineri 08:00-18:00, sâmbătă 09:00-14:00, duminică închis.');
         return false;
       }
@@ -180,8 +196,7 @@ export default function AdminDashboard() {
         setError('Vehiculul selectat nu aparține clientului ales.');
         return false;
       }
-      const duration = getServiceDurationMinutesForSlots(service);
-      if (hasMechanicScheduleConflict(scheduled, duration, form.mechanicId, data.appointments, data.services, form.id)) {
+      if (dateChanged && hasMechanicScheduleConflict(scheduled, getServiceDurationMinutes(service), form.mechanicId, data.appointments, data.services, form.id)) {
         setError('Mecanicul nu este liber în acest interval. Alege o altă oră sau un alt mecanic.');
         return false;
       }
@@ -365,13 +380,9 @@ export default function AdminDashboard() {
 
   return (
     <div style={{ minHeight: '100vh', display: 'flex', background: '#f5f6f8', color: '#081225', fontFamily: 'Segoe UI, sans-serif' }}>
-
-      {/* Overlay mobile */}
       {isMobile && sidebarOpen && (
         <div onClick={() => setSidebarOpen(false)} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)', zIndex: 40 }} />
       )}
-
-      {/* Sidebar */}
       <aside style={{
         width: 230, background: '#fff', borderRight: '1px solid #e5e7eb',
         padding: 22, display: 'flex', flexDirection: 'column',
@@ -400,10 +411,7 @@ export default function AdminDashboard() {
           }}>Deconectare</button>
         </div>
       </aside>
-
-      {/* Main */}
       <main style={{ flex: 1, minWidth: 0, marginLeft: isMobile ? 0 : 230 }}>
-        {/* Header */}
         <header style={{
           height: 64, background: '#fff', borderBottom: '1px solid #e5e7eb',
           display: 'flex', alignItems: 'center', justifyContent: 'space-between',
@@ -428,7 +436,6 @@ export default function AdminDashboard() {
             {user?.email?.slice(0, 2).toUpperCase() || 'AD'}
           </div>
         </header>
-
         <section style={{ padding: isMobile ? 16 : 32 }}>
           {error && <Alert type="error">{error}</Alert>}
           {message && <Alert type="success">{message}</Alert>}
@@ -438,8 +445,6 @@ export default function AdminDashboard() {
     </div>
   );
 }
-
-//Forme
 
 function AppointmentForm({ form, data, setField, save, resetForm, loading }) {
   const availableVehicles = form.customerId ? data.vehicles.filter(v => String(v.customerId) === String(form.customerId)) : [];
@@ -558,7 +563,6 @@ function PaymentForm({ form, data, setField, save, resetForm, loading }) {
 function UserForm({ form, data, availableEmails, setField, save, resetForm, loading }) {
   const handleEmailChange = v => {
     setField('users', 'email', v);
-    // Determina rolul automat din email
     const isCustomer = data.customers.some(c => c.email?.toLowerCase() === v.toLowerCase());
     const isMechanic = data.mechanics.some(m => m.email?.toLowerCase() === v.toLowerCase());
     if (isMechanic) setField('users', 'roleId', data.roles.find(r => r.name === 'Mecanic')?.id || 3);
@@ -596,8 +600,6 @@ function UserForm({ form, data, availableEmails, setField, save, resetForm, load
     <Buttons loading={loading} isEdit={form.id} onSave={() => save('users')} onCancel={() => resetForm('users')} />
   </FormGrid>;
 }
-
-// Helpers
 
 const endpoints = { appointments: '/appointments', mechanics: '/mechanic', customers: '/customer', vehicles: '/vehicles', services: '/services', payments: '/payments', users: '/users' };
 const titles = { appointments: 'Programări', mechanics: 'Mecanici', customers: 'Clienți', vehicles: 'Vehicule', services: 'Servicii', payments: 'Plăți', users: 'Utilizatori' };
@@ -686,8 +688,6 @@ function monthName(month) {
   const months = ['Ianuarie', 'Februarie', 'Martie', 'Aprilie', 'Mai', 'Iunie', 'Iulie', 'August', 'Septembrie', 'Octombrie', 'Noiembrie', 'Decembrie'];
   return months[month - 1];
 }
-
-// UI 
 
 function SearchBar({ value, onChange, placeholder }) {
   return (
@@ -784,8 +784,8 @@ function Th({ children }) {
   return <th style={{ padding: '12px 18px', background: '#f5f6f8', color: '#94a3b8', fontSize: 11, letterSpacing: 1, textTransform: 'uppercase', textAlign: 'left', whiteSpace: 'nowrap' }}>{children}</th>;
 }
 
-function Td({ children }) {
-  return <td style={{ padding: '14px 18px', borderTop: '1px solid #f1f5f9', fontSize: 14, verticalAlign: 'middle' }}>{children}</td>;
+function Td({ children, style }) {
+  return <td style={{ padding: '14px 18px', borderTop: '1px solid #f1f5f9', fontSize: 14, verticalAlign: 'middle', ...style }}>{children}</td>;
 }
 
 function Alert({ type, children }) {

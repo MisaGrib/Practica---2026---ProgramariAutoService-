@@ -5,7 +5,6 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Backend.Services;
 
-
 public class AppointmentsService : IAppointmentsService
 {
     private readonly AutoServiceAppointmentsContext _context;
@@ -135,9 +134,23 @@ public class AppointmentsService : IAppointmentsService
         {
             throw new InvalidOperationException("Datele selectate pentru programare nu sunt valide.");
         }
-        if (appointment.ScheduledDate <= DateTime.Now)
+
+        bool isUpdate = excludeAppointmentId.HasValue;
+
+        if (!isUpdate && appointment.ScheduledDate <= DateTime.Now)
         {
-            throw new InvalidOperationException("Nu poți programa sau modifica o programare în trecut.");
+            throw new InvalidOperationException("Nu poți programa o programare în trecut.");
+        }
+
+        if (isUpdate && appointment.ScheduledDate <= DateTime.Now)
+        {
+            var existing = await _context.Appointments.AsNoTracking()
+                .FirstOrDefaultAsync(a => a.Id == excludeAppointmentId);
+            if (existing != null && !AreScheduledDatesEqual(appointment.ScheduledDate, existing.ScheduledDate))
+            {
+                throw new InvalidOperationException("Nu poți modifica data programării într-o dată din trecut.");
+            }
+            return;
         }
 
         var duration = await GetServiceDurationMinutesAsync(appointment.ServiceId);
@@ -199,8 +212,7 @@ public class AppointmentsService : IAppointmentsService
         return await _context.SelectAppointments.Where(a => a.Status == status).ToListAsync();
     }
 
-
-   private async Task<string> GenerateUniqueAppointmentCodeAsync(DateTime createdAt)
+    private async Task<string> GenerateUniqueAppointmentCodeAsync(DateTime createdAt)
     {
         var prefix = $"APP-{createdAt:yyyyMMdd}-";
         var existingCodes = await _context.Appointments
@@ -223,7 +235,6 @@ public class AppointmentsService : IAppointmentsService
 
         return newCode;
     }
-
 
     public async Task<Appointment> CreateAppointmentAsync(Appointment appointment)
     {
@@ -250,12 +261,6 @@ public class AppointmentsService : IAppointmentsService
         if ((appointment.Status == "În progres" || appointment.Status == "Complet") && DateTime.Now < appointment.ScheduledDate)
         {
             throw new InvalidOperationException("Nu poți marca o programare ca 'În progres' sau 'Complet' înainte de ora programată.");
-        }
-
-        if (!string.Equals(appointment.ProblemDescription, existingAppointment.ProblemDescription, StringComparison.Ordinal) &&
-            DateTime.Now < existingAppointment.ScheduledDate)
-        {
-            throw new InvalidOperationException("Nu poți adăuga o descriere înainte de ora programată.");
         }
 
         var scheduleChanged = !AreScheduledDatesEqual(appointment.ScheduledDate, existingAppointment.ScheduledDate)
@@ -304,12 +309,12 @@ public class AppointmentsService : IAppointmentsService
         await _context.SaveChangesAsync();
         return true;
     }
-  
+
     public async Task<bool> DeleteAppointmentAsync(int id)
     {
         var existingAppointment = await _context.Appointments.FindAsync(id);
 
-        if(existingAppointment == null)
+        if (existingAppointment == null)
         {
             return false;
         }
@@ -319,6 +324,4 @@ public class AppointmentsService : IAppointmentsService
         await _context.SaveChangesAsync();
         return true;
     }
-
-
 }

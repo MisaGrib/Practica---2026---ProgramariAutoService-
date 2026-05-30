@@ -54,12 +54,9 @@ export default function MecanicDashboard() {
       const mechanicRes = await api.get(`/mechanic/email/${encodeURIComponent(user.email)}`);
       const m = mechanicRes.data;
       setMechanic(m);
-
       const apptRes = await api.get('/appointments/details');
       const fullName = `${m.firstName} ${m.lastName}`.toLowerCase();
-      const mine = (apptRes.data || []).filter(a =>
-        a.mechanic?.toLowerCase() === fullName
-      );
+      const mine = (apptRes.data || []).filter(a => a.mechanic?.toLowerCase() === fullName);
       setAppointments(mine);
     } catch {
       setError('Nu s-au putut încărca datele. Verifică conexiunea.');
@@ -84,8 +81,6 @@ export default function MecanicDashboard() {
   const saveNote = async (id) => {
     setLoading(true);
     try {
-      const appt = appointments.find(a => a.id === id);
-      if (!appt) return;
       const appointmentRes = await api.get(`/appointments/${id}`);
       const fullAppointment = appointmentRes.data;
       await api.put(`/appointments/${id}`, {
@@ -103,8 +98,8 @@ export default function MecanicDashboard() {
       setTimeout(() => setMessage(''), 2500);
       await loadData();
     } catch (err) {
-      const message = err?.response?.data || err?.message || 'Nu s-a putut salva diagnosticul.';
-      setError(message);
+      const msg = err?.response?.data || err?.message || 'Nu s-a putut salva diagnosticul.';
+      setError(msg);
       setTimeout(() => setError(''), 2500);
     } finally { setLoading(false); }
   };
@@ -255,7 +250,6 @@ export default function MecanicDashboard() {
                     )}
                   </div>
 
-                  {/* Camp diagnostic */}
                   {isEditing && (
                     <div style={{ borderTop: '1px solid #f1f5f9', padding: '14px 20px', background: '#f8fafc' }}>
                       <div style={{ fontSize: 11, fontWeight: 700, color: '#64748b', letterSpacing: 0.8, textTransform: 'uppercase', marginBottom: 8 }}>
@@ -279,7 +273,6 @@ export default function MecanicDashboard() {
                     </div>
                   )}
 
-                  {/* Afisare diagnostic existent */}
                   {!isEditing && a.problemDescription && (
                     <div style={{ borderTop: '1px solid #f1f5f9', padding: '10px 20px', background: '#f8fafc' }}>
                       <span style={{ fontSize: 11, fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: 0.8 }}>Diagnostic: </span>
@@ -352,19 +345,52 @@ export default function MecanicDashboard() {
             <div style={{ display: 'grid', gap: 12 }}>
               {selectedDayAppointments.map(a => {
                 const t = new Date(a.scheduledDate);
+                const isEditing = editingNote === `cal-${a.id}`;
                 return (
-                  <div key={a.id} style={{ display: 'flex', gap: 14, alignItems: 'center', padding: '14px 16px', borderRadius: 10, border: '1px solid #f1f5f9' }}>
-                    <div style={{ textAlign: 'center', minWidth: 40 }}>
-                      <div style={{ fontSize: 17, fontWeight: 900 }}>{t.getHours().toString().padStart(2, '0')}</div>
-                      <div style={{ fontSize: 11, color: '#94a3b8' }}>{t.getMinutes().toString().padStart(2, '0')}</div>
+                  <div key={a.id} style={{ borderRadius: 10, border: '1px solid #f1f5f9', overflow: 'hidden' }}>
+                    <div style={{ display: 'flex', gap: 14, alignItems: 'center', padding: '14px 16px', flexWrap: 'wrap' }}>
+                      <div style={{ textAlign: 'center', minWidth: 40 }}>
+                        <div style={{ fontSize: 17, fontWeight: 900 }}>{t.getHours().toString().padStart(2, '0')}</div>
+                        <div style={{ fontSize: 11, color: '#94a3b8' }}>{t.getMinutes().toString().padStart(2, '0')}</div>
+                      </div>
+                      <div style={{ flex: 1 }}>
+                        <div style={{ fontWeight: 700, marginBottom: 3 }}>{a.serviceName}</div>
+                        <div style={{ fontSize: 12, color: '#64748b' }}>👤 {a.customer}</div>
+                        <div style={{ fontSize: 12, color: '#64748b' }}>🚗 {a.licensePlate}</div>
+                        {!isEditing && a.problemDescription && <div style={{ fontSize: 12, color: '#94a3b8', marginTop: 3 }}>📝 {a.problemDescription}</div>}
+                      </div>
+                      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 6 }}>
+                        <Status value={a.status} />
+                        {a.status !== 'Anulat' && (
+                          <button onClick={() => {
+                            if (isEditing) { setEditingNote(null); setNoteValue(''); }
+                            else { setEditingNote(`cal-${a.id}`); setNoteValue(a.problemDescription || ''); }
+                          }} style={{ border: '1px solid #e5e7eb', background: '#fff', borderRadius: 8, padding: '5px 10px', cursor: 'pointer', fontSize: 11, fontWeight: 700, color: '#475569' }}>
+                            {isEditing ? 'Anulează' : '📝 Diagnostic'}
+                          </button>
+                        )}
+                      </div>
                     </div>
-                    <div style={{ flex: 1 }}>
-                      <div style={{ fontWeight: 700, marginBottom: 3 }}>{a.serviceName}</div>
-                      <div style={{ fontSize: 12, color: '#64748b' }}>👤 {a.customer}</div>
-                      <div style={{ fontSize: 12, color: '#64748b' }}>🚗 {a.licensePlate}</div>
-                      {a.problemDescription && <div style={{ fontSize: 12, color: '#94a3b8', marginTop: 3 }}>📝 {a.problemDescription}</div>}
-                    </div>
-                    <Status value={a.status} />
+                    {isEditing && (
+                      <div style={{ borderTop: '1px solid #f1f5f9', padding: '14px 16px', background: '#f8fafc' }}>
+                        <div style={{ fontSize: 11, fontWeight: 700, color: '#64748b', letterSpacing: 0.8, textTransform: 'uppercase', marginBottom: 8 }}>Diagnostic / Notă</div>
+                        <textarea
+                          value={noteValue}
+                          onChange={e => setNoteValue(e.target.value)}
+                          placeholder="Descrie diagnosticul sau observațiile tehnice..."
+                          rows={3}
+                          style={{ width: '100%', border: '1px solid #e5e7eb', borderRadius: 8, padding: '10px 12px', fontSize: 14, outline: 'none', resize: 'vertical', fontFamily: 'Segoe UI, sans-serif', boxSizing: 'border-box' }}
+                        />
+                        <div style={{ display: 'flex', gap: 8, marginTop: 10 }}>
+                          <button onClick={() => saveNote(a.id)} disabled={loading} style={{ ...btnBlue, fontSize: 13 }}>
+                            {loading ? 'Se salvează...' : '💾 Salvează'}
+                          </button>
+                          <button onClick={() => { setEditingNote(null); setNoteValue(''); }} style={{ border: '1px solid #e5e7eb', background: '#fff', borderRadius: 8, padding: '8px 14px', cursor: 'pointer', fontSize: 13, fontWeight: 700, color: '#475569' }}>
+                            Anulează
+                          </button>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 );
               })}
@@ -423,7 +449,6 @@ export default function MecanicDashboard() {
         <div onClick={() => setSidebarOpen(false)} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)', zIndex: 40 }} />
       )}
 
-      {/* Sidebar — același stil ca Admin */}
       <aside style={{
         width: 230, background: '#fff', borderRight: '1px solid #e5e7eb',
         padding: 22, display: 'flex', flexDirection: 'column',
@@ -468,7 +493,6 @@ export default function MecanicDashboard() {
           </div>
 
           <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-            {/* Clopot */}
             <div style={{ position: 'relative' }}>
               <button onClick={() => setBellOpen(!bellOpen)} style={{ border: 'none', background: 'none', cursor: 'pointer', position: 'relative', padding: 6 }}>
                 <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#475569" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -512,7 +536,6 @@ export default function MecanicDashboard() {
               )}
             </div>
 
-            {/* Nume + Avatar */}
             {!isMobile && mechanic && (
               <span style={{ fontSize: 13, fontWeight: 700 }}>{mechanic.firstName} {mechanic.lastName}</span>
             )}
