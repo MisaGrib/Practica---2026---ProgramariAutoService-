@@ -21,17 +21,17 @@ GO
 -- USERS
 INSERT INTO Users(Email, PasswordHash, RoleId)
 VALUES
-('admin@autoservice.md', 'admin123', 1),
+('admin@autoservice.md', 'JAvlGPq9JyTdtvBO6x2llnRI1+gxwIyPqCKAn3THIKk=', 1),
 
-('ion.ceban@gmail.com', 'client123', 2),
-('vasile.rusu@gmail.com', 'client123', 2),
-('mariana.balan@gmail.com', 'client123', 2),
-('sergiu.cojocaru@gmail.com', 'client123', 2),
-('ana.munteanu@gmail.com', 'client123', 2),
+('ion.ceban@gmail.com', 'GGR0wfLC9zWlTCz4Lujofypc0wlA4oACk2P+zt/FMow=', 2),
+('vasile.rusu@gmail.com', 'GGR0wfLC9zWlTCz4Lujofypc0wlA4oACk2P+zt/FMow=', 2),
+('mariana.balan@gmail.com', 'GGR0wfLC9zWlTCz4Lujofypc0wlA4oACk2P+zt/FMow=', 2),
+('sergiu.cojocaru@gmail.com', 'GGR0wfLC9zWlTCz4Lujofypc0wlA4oACk2P+zt/FMow=', 2),
+('ana.munteanu@gmail.com', 'GGR0wfLC9zWlTCz4Lujofypc0wlA4oACk2P+zt/FMow=', 2),
 
-('mihai.rotaru@service.md', 'mech123', 3),
-('victor.topala@service.md', 'mech123', 3),
-('dorin.spinu@service.md', 'mech123', 3);
+('mihai.rotaru@service.md', 'UI5ztGMIhvYChTQBhapZHx3TuVHg/JrCcZUcV8vAS+4=', 3),
+('victor.topala@service.md', 'UI5ztGMIhvYChTQBhapZHx3TuVHg/JrCcZUcV8vAS+4=', 3),
+('dorin.spinu@service.md', 'UI5ztGMIhvYChTQBhapZHx3TuVHg/JrCcZUcV8vAS+4=', 3);
 
 GO
 

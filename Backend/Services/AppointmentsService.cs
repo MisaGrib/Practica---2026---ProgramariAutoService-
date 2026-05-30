@@ -59,6 +59,43 @@ public class AppointmentsService : IAppointmentsService
         return startA < endB && startB < endA;
     }
 
+    private static bool TryGetWorkingHours(DateTime date, out TimeSpan opening, out TimeSpan closing)
+    {
+        if (date.DayOfWeek >= DayOfWeek.Monday && date.DayOfWeek <= DayOfWeek.Friday)
+        {
+            opening = new TimeSpan(8, 0, 0);
+            closing = new TimeSpan(18, 0, 0);
+            return true;
+        }
+
+        if (date.DayOfWeek == DayOfWeek.Saturday)
+        {
+            opening = new TimeSpan(9, 0, 0);
+            closing = new TimeSpan(14, 0, 0);
+            return true;
+        }
+
+        opening = TimeSpan.Zero;
+        closing = TimeSpan.Zero;
+        return false;
+    }
+
+    private static void ValidateWithinWorkingHours(DateTime scheduledDate, int durationMinutes)
+    {
+        if (!TryGetWorkingHours(scheduledDate, out var opening, out var closing))
+        {
+            throw new InvalidOperationException("Duminica service-ul este inchis. Alege o zi de luni pana sambata.");
+        }
+
+        var start = scheduledDate.TimeOfDay;
+        var end = scheduledDate.AddMinutes(durationMinutes);
+
+        if (end.Date != scheduledDate.Date || start < opening || end.TimeOfDay > closing)
+        {
+            throw new InvalidOperationException("Programarea trebuie sa incapa in orarul service-ului: luni-vineri 08:00-18:00, sambata 09:00-14:00, duminica inchis.");
+        }
+    }
+
     private async Task<bool> HasMechanicScheduleConflictAsync(int mechanicId, DateTime scheduledDate, int serviceId, int? excludeAppointmentId = null)
     {
         var duration = await GetServiceDurationMinutesAsync(serviceId);
@@ -84,10 +121,27 @@ public class AppointmentsService : IAppointmentsService
 
     private async Task ValidateAppointmentScheduleAsync(Appointment appointment, int? excludeAppointmentId = null)
     {
+        if (appointment.CustomerId <= 0 || appointment.VehicleId <= 0 || appointment.MechanicId <= 0 || appointment.ServiceId <= 0)
+        {
+            throw new InvalidOperationException("Selecteaza clientul, vehiculul, mecanicul si serviciul.");
+        }
+
+        var customerExists = await _context.Customers.AnyAsync(c => c.Id == appointment.CustomerId);
+        var mechanicExists = await _context.Mechanics.AnyAsync(m => m.Id == appointment.MechanicId);
+        var serviceExists = await _context.Services.AnyAsync(s => s.Id == appointment.ServiceId);
+        var vehicleMatchesCustomer = await _context.Vehicles.AnyAsync(v => v.Id == appointment.VehicleId && v.CustomerId == appointment.CustomerId);
+
+        if (!customerExists || !mechanicExists || !serviceExists || !vehicleMatchesCustomer)
+        {
+            throw new InvalidOperationException("Datele selectate pentru programare nu sunt valide.");
+        }
         if (appointment.ScheduledDate <= DateTime.Now)
         {
             throw new InvalidOperationException("Nu poți programa sau modifica o programare în trecut.");
         }
+
+        var duration = await GetServiceDurationMinutesAsync(appointment.ServiceId);
+        ValidateWithinWorkingHours(appointment.ScheduledDate, duration);
 
         if (await HasMechanicScheduleConflictAsync(appointment.MechanicId, appointment.ScheduledDate, appointment.ServiceId, excludeAppointmentId))
         {
@@ -146,17 +200,28 @@ public class AppointmentsService : IAppointmentsService
     }
 
 
-   private async Task<string> GenerateUniqueAppointmentCodeAsync()
+   private async Task<string> GenerateUniqueAppointmentCodeAsync(DateTime createdAt)
     {
-        string code;
+        var prefix = $"APP-{createdAt:yyyyMMdd}-";
+        var existingCodes = await _context.Appointments
+            .Where(a => a.AppointmentCode.StartsWith(prefix))
+            .Select(a => a.AppointmentCode)
+            .ToListAsync();
 
-        int nrAppointmentsDay = await _context.Appointments.CountAsync(s => s.CreatedAt.Date == DateTime.Now.Date) + 1;
+        var nextNumber = existingCodes
+            .Select(code => int.TryParse(code.Substring(prefix.Length), out var number) ? number : 0)
+            .DefaultIfEmpty(0)
+            .Max() + 1;
 
+        string newCode;
+        do
+        {
+            newCode = $"{prefix}{nextNumber:D3}";
+            nextNumber++;
+        }
+        while (existingCodes.Contains(newCode));
 
-        code = $"APP-{DateTime.Now:yyyyMMdd}-{nrAppointmentsDay:D3}";
-
-        return code;
-    
+        return newCode;
     }
 
 
@@ -164,9 +229,8 @@ public class AppointmentsService : IAppointmentsService
     {
         await ValidateAppointmentScheduleAsync(appointment);
 
-        string appointmentCode = await GenerateUniqueAppointmentCodeAsync();
-        appointment.AppointmentCode = appointmentCode;
         appointment.CreatedAt = DateTime.Now;
+        appointment.AppointmentCode = await GenerateUniqueAppointmentCodeAsync(appointment.CreatedAt);
         appointment.Status = "Programat";
 
         _context.Appointments.Add(appointment);
@@ -183,9 +247,9 @@ public class AppointmentsService : IAppointmentsService
             return false;
         }
 
-        if (appointment.Status == "Complet" && DateTime.Now < appointment.ScheduledDate)
+        if ((appointment.Status == "În progres" || appointment.Status == "Complet") && DateTime.Now < appointment.ScheduledDate)
         {
-            throw new InvalidOperationException("Nu poți marca ca 'Complet' o programare înainte de ora programată.");
+            throw new InvalidOperationException("Nu poți marca o programare ca 'În progres' sau 'Complet' înainte de ora programată.");
         }
 
         if (!string.Equals(appointment.ProblemDescription, existingAppointment.ProblemDescription, StringComparison.Ordinal) &&
@@ -195,9 +259,14 @@ public class AppointmentsService : IAppointmentsService
         }
 
         var scheduleChanged = !AreScheduledDatesEqual(appointment.ScheduledDate, existingAppointment.ScheduledDate)
-            || appointment.MechanicId != existingAppointment.MechanicId;
+            || appointment.MechanicId != existingAppointment.MechanicId
+            || appointment.ServiceId != existingAppointment.ServiceId;
 
-        if (scheduleChanged)
+        var appointmentDataChanged = scheduleChanged
+            || appointment.CustomerId != existingAppointment.CustomerId
+            || appointment.VehicleId != existingAppointment.VehicleId;
+
+        if (appointmentDataChanged)
         {
             await ValidateAppointmentScheduleAsync(appointment, id);
         }

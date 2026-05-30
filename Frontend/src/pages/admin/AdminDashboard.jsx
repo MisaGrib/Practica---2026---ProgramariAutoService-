@@ -14,7 +14,7 @@ const menuItems = [
 ];
 
 const initialForms = {
-  appointments: { id: null, customerId: '', vehicleId: '', mechanicId: '', serviceId: '', scheduledDate: '', problemDescription: '', status: 'Programat' },
+  appointments: { id: null, customerId: '', vehicleId: '', mechanicId: '', appointmentDate: '', serviceId: '', scheduledDate: '', problemDescription: '', status: 'Programat' },
   mechanics: { id: null, firstName: '', lastName: '', phone: '', email: '' },
   customers: { id: null, firstName: '', lastName: '', phone: '', email: '' },
   vehicles: { id: null, licensePlate: '', brand: '', model: '', series: '', customerId: '' },
@@ -118,6 +118,23 @@ export default function AdminDashboard() {
   const normalizePhone = value => (value || '').replace(/\D/g, '');
   const isValidEmail = value => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
   const isValidPhone = value => /^\d{8,15}$/.test(value);
+  const getServiceDurationMinutes = service => {
+    if (!service) return 60;
+    const name = (service.name || '').toLowerCase();
+    if ((name.includes('revizie') || name.includes('service')) || (name.includes('schimb') && name.includes('ulei'))) return 120;
+    if (name.includes('diagn') || name.includes('verific') || name.includes('consult')) return 60;
+    if (name.includes('fr') || name.includes('ambreiaj') || name.includes('cutie')) return 180;
+    if (Number(service.price || 0) >= 2500) return 180;
+    return 90;
+  };
+  const isWithinWorkingHours = (date, durationMinutes) => {
+    const day = date.getDay();
+    if (day === 0) return false;
+    const startMinutes = date.getHours() * 60 + date.getMinutes();
+    const endMinutes = startMinutes + durationMinutes;
+    if (day === 6) return startMinutes >= 9 * 60 && endMinutes <= 14 * 60;
+    return startMinutes >= 8 * 60 && endMinutes <= 18 * 60;
+  };
 
   const setField = (section, field, value) => {
     if ((section === 'mechanics' || section === 'customers') && field === 'phone') value = normalizePhone(value);
@@ -142,8 +159,30 @@ export default function AdminDashboard() {
         setError('Data programării este invalidă.');
         return false;
       }
-      if (scheduled <= new Date()) {
+      const originalAppointment = form.id ? data.appointments.find(a => a.id === form.id) : null;
+      const originalScheduled = originalAppointment ? new Date(originalAppointment.scheduledDate) : null;
+      const dateChanged = !originalScheduled || originalScheduled.getTime() !== scheduled.getTime();
+      if (scheduled <= new Date() && (!form.id || dateChanged)) {
         setError('Data programării trebuie să fie în viitor.');
+        return false;
+      }
+      if (form.id && ['În progres', 'Complet'].includes(form.status) && new Date() < scheduled) {
+        setError("Statusul poate fi schimbat la 'În progres' sau 'Complet' doar după ora programată.");
+        return false;
+      }
+      const service = data.services.find(s => String(s.id) === String(form.serviceId));
+      if (!isWithinWorkingHours(scheduled, getServiceDurationMinutes(service))) {
+        setError('Programarea trebuie să fie în orar: luni-vineri 08:00-18:00, sâmbătă 09:00-14:00, duminică închis.');
+        return false;
+      }
+      const vehicle = data.vehicles.find(v => String(v.id) === String(form.vehicleId));
+      if (vehicle && String(vehicle.customerId) !== String(form.customerId)) {
+        setError('Vehiculul selectat nu aparține clientului ales.');
+        return false;
+      }
+      const duration = getServiceDurationMinutesForSlots(service);
+      if (hasMechanicScheduleConflict(scheduled, duration, form.mechanicId, data.appointments, data.services, form.id)) {
+        setError('Mecanicul nu este liber în acest interval. Alege o altă oră sau un alt mecanic.');
         return false;
       }
     }
@@ -186,7 +225,7 @@ export default function AdminDashboard() {
   };
 
   const edit = (section, item) => {
-    if (section === 'appointments') { setForms(prev => ({ ...prev, appointments: { id: item.id, customerId: item.customerId || '', vehicleId: item.vehicleId || '', mechanicId: item.mechanicId || '', serviceId: item.serviceId || '', scheduledDate: toInputDate(item.scheduledDate), problemDescription: item.problemDescription || '', status: item.status || 'Programat' } })); return; }
+    if (section === 'appointments') { setForms(prev => ({ ...prev, appointments: { id: item.id, customerId: item.customerId || '', vehicleId: item.vehicleId || '', mechanicId: item.mechanicId || '', serviceId: item.serviceId || '', appointmentDate: toInputDateOnly(item.scheduledDate), scheduledDate: toInputDate(item.scheduledDate), problemDescription: item.problemDescription || '', status: item.status || 'Programat' } })); return; }
     if (section === 'payments') { setForms(prev => ({ ...prev, payments: { id: item.id, appointmentId: item.appointmentId || '', paymentType: item.paymentType || 'Numerar', amount: item.amount || '' } })); return; }
     if (section === 'users') { setForms(prev => ({ ...prev, users: { id: item.id, email: item.email || '', passwordHash: '', roleId: item.roleId || 2, isActive: item.isActive ?? true } })); return; }
     setForms(prev => ({ ...prev, [section]: { ...prev[section], ...item } }));
@@ -404,6 +443,25 @@ export default function AdminDashboard() {
 
 function AppointmentForm({ form, data, setField, save, resetForm, loading }) {
   const availableVehicles = form.customerId ? data.vehicles.filter(v => String(v.customerId) === String(form.customerId)) : [];
+  const selectedService = data.services.find(s => String(s.id) === String(form.serviceId));
+  const selectedDate = form.appointmentDate || toInputDateOnly(form.scheduledDate);
+  const selectedTime = toInputTimeOnly(form.scheduledDate);
+  const isBeforeScheduledTime = form.scheduledDate ? new Date() < new Date(form.scheduledDate) : true;
+  const availableTimes = getAvailableTimeSlots(selectedDate, selectedService);
+  const handleDateChange = value => {
+    const nextTimes = getAvailableTimeSlots(value, selectedService);
+    const nextTime = nextTimes.includes(selectedTime) ? selectedTime : '';
+    setField('appointments', 'appointmentDate', value);
+    setField('appointments', 'scheduledDate', nextTime ? combineDateTime(value, nextTime) : '');
+  };
+  const handleServiceChange = value => {
+    setField('appointments', 'serviceId', value);
+    setField('appointments', 'scheduledDate', '');
+  };
+  const handleTimeChange = value => {
+    setField('appointments', 'scheduledDate', selectedDate && value ? combineDateTime(selectedDate, value) : '');
+  };
+
   return <FormGrid>
     <Select label="Client" value={form.customerId} onChange={v => { setField('appointments', 'customerId', v); setField('appointments', 'vehicleId', ''); }}>
       <option value="">Alege client</option>
@@ -417,14 +475,24 @@ function AppointmentForm({ form, data, setField, save, resetForm, loading }) {
       <option value="">Alege mecanic</option>
       {data.mechanics.map(m => <option key={m.id} value={m.id}>{m.firstName} {m.lastName}</option>)}
     </Select>
-    <Select label="Serviciu" value={form.serviceId} onChange={v => setField('appointments', 'serviceId', v)}>
+    <Select label="Serviciu" value={form.serviceId} onChange={handleServiceChange}>
       <option value="">Alege serviciu</option>
       {data.services.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
     </Select>
-    <Input label="Data" type="datetime-local" value={form.scheduledDate} onChange={v => setField('appointments', 'scheduledDate', v)} />
+    <Input label="Data" type="date" min={toInputDateOnly(new Date())} value={selectedDate} onChange={handleDateChange} />
+    <Select label="Ora" value={selectedTime} onChange={handleTimeChange} disabled={!selectedDate || !form.serviceId || availableTimes.length === 0}>
+      <option value="">{!form.serviceId ? 'Alege întâi serviciul' : availableTimes.length ? 'Alege ora' : 'Nu sunt ore disponibile'}</option>
+      {availableTimes.map(time => <option key={time} value={time}>{time}</option>)}
+    </Select>
+    <div style={{ fontSize: 12, color: '#64748b', lineHeight: 1.45, alignSelf: 'center', minWidth: 180 }}>
+      Grafic: L-V 08:00-18:00, S 09:00-14:00, D închis.
+    </div>
     {form.id ? (
       <Select label="Status" value={form.status} onChange={v => setField('appointments', 'status', v)}>
-        <option>Programat</option><option>În progres</option><option>Complet</option><option>Anulat</option>
+        <option>Programat</option>
+        <option disabled={isBeforeScheduledTime}>În progres</option>
+        <option disabled={isBeforeScheduledTime}>Complet</option>
+        <option>Anulat</option>
       </Select>
     ) : null}
     <Input label="Problema" value={form.problemDescription} onChange={v => setField('appointments', 'problemDescription', v)} />
@@ -493,8 +561,8 @@ function UserForm({ form, data, availableEmails, setField, save, resetForm, load
     // Determina rolul automat din email
     const isCustomer = data.customers.some(c => c.email?.toLowerCase() === v.toLowerCase());
     const isMechanic = data.mechanics.some(m => m.email?.toLowerCase() === v.toLowerCase());
-    if (isMechanic) setField('users', 'roleId', data.roles.find(r => r.name === 'Mecanic')?.id || 2);
-    else if (isCustomer) setField('users', 'roleId', data.roles.find(r => r.name === 'Client')?.id || 3);
+    if (isMechanic) setField('users', 'roleId', data.roles.find(r => r.name === 'Mecanic')?.id || 3);
+    else if (isCustomer) setField('users', 'roleId', data.roles.find(r => r.name === 'Client')?.id || 2);
   };
 
   return <FormGrid>
@@ -554,6 +622,59 @@ function toInputDate(value) {
   const date = new Date(value);
   date.setMinutes(date.getMinutes() - date.getTimezoneOffset());
   return date.toISOString().slice(0, 16);
+}
+
+function toInputDateOnly(value) {
+  if (!value) return '';
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return '';
+  date.setMinutes(date.getMinutes() - date.getTimezoneOffset());
+  return date.toISOString().slice(0, 10);
+}
+
+function toInputTimeOnly(value) {
+  if (!value) return '';
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return '';
+  return `${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
+}
+
+function combineDateTime(date, time) {
+  return date && time ? `${date}T${time}` : '';
+}
+
+function getServiceDurationMinutesForSlots(service) {
+  if (!service) return 60;
+  const name = (service.name || '').toLowerCase();
+  if ((name.includes('revizie') || name.includes('service')) || (name.includes('schimb') && name.includes('ulei'))) return 120;
+  if (name.includes('diagn') || name.includes('verific') || name.includes('consult')) return 60;
+  if (name.includes('fr') || name.includes('ambreiaj') || name.includes('cutie')) return 180;
+  if (Number(service.price || 0) >= 2500) return 180;
+  return 90;
+}
+
+function getAvailableTimeSlots(dateValue, service) {
+  if (!dateValue || !service) return [];
+  const date = new Date(`${dateValue}T00:00`);
+  const day = date.getDay();
+  if (day === 0) return [];
+
+  const open = day === 6 ? 9 * 60 : 8 * 60;
+  const close = day === 6 ? 14 * 60 : 18 * 60;
+  const duration = getServiceDurationMinutesForSlots(service);
+  const now = new Date();
+  const isToday = toInputDateOnly(now) === dateValue;
+  const slots = [];
+
+  for (let minutes = open; minutes + duration <= close; minutes += 30) {
+    const hours = Math.floor(minutes / 60);
+    const mins = minutes % 60;
+    const slotDate = new Date(`${dateValue}T${String(hours).padStart(2, '0')}:${String(mins).padStart(2, '0')}`);
+    if (isToday && slotDate <= now) continue;
+    slots.push(`${String(hours).padStart(2, '0')}:${String(mins).padStart(2, '0')}`);
+  }
+
+  return slots;
 }
 
 function formatDate(value) {
@@ -619,11 +740,11 @@ function FormGrid({ children }) {
   return <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 14, alignItems: 'end' }}>{children}</div>;
 }
 
-function Input({ label, type = 'text', value, onChange, disabled }) {
+function Input({ label, type = 'text', value, onChange, disabled, min }) {
   return (
     <label style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
       <span style={{ fontSize: 11, color: '#64748b', fontWeight: 700, letterSpacing: 0.8, textTransform: 'uppercase' }}>{label}</span>
-      <input disabled={disabled} type={type} value={value ?? ''} onChange={e => onChange(e.target.value)}
+      <input disabled={disabled} type={type} min={min} value={value ?? ''} onChange={e => onChange(e.target.value)}
         style={{ height: 42, border: '1px solid #e5e7eb', borderRadius: 6, padding: '0 12px', outline: 'none', fontSize: 14, background: disabled ? '#f9fafb' : '#fff', width: '100%', boxSizing: 'border-box' }} />
     </label>
   );

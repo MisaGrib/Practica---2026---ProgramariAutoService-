@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Mvc;
 using Backend.Interfaces;
 using Backend.Models;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.EntityFrameworkCore;
 
 [ApiController]
 [Route("api/[controller]")]
@@ -141,6 +142,10 @@ public class AppointmentsController : ControllerBase
         {
             return BadRequest(ex.Message);
         }
+        catch (DbUpdateException)
+        {
+            return BadRequest("Programarea nu a putut fi salvata. Verifica daca datele sunt valide si incearca din nou.");
+        }
     }
 
     [HttpPut("{id}")]
@@ -164,6 +169,10 @@ public class AppointmentsController : ControllerBase
         catch (InvalidOperationException ex)
         {
             return BadRequest(ex.Message);
+        }
+        catch (DbUpdateException)
+        {
+            return BadRequest("Programarea nu a putut fi actualizata. Verifica daca datele sunt valide si incearca din nou.");
         }
     }
 

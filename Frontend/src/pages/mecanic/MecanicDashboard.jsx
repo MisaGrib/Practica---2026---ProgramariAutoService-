@@ -86,14 +86,16 @@ export default function MecanicDashboard() {
     try {
       const appt = appointments.find(a => a.id === id);
       if (!appt) return;
+      const appointmentRes = await api.get(`/appointments/${id}`);
+      const fullAppointment = appointmentRes.data;
       await api.put(`/appointments/${id}`, {
-        customerId: appt.customerId,
-        vehicleId: appt.vehicleId,
-        mechanicId: appt.mechanicId,
-        serviceId: appt.serviceId,
-        scheduledDate: appt.scheduledDate,
+        customerId: fullAppointment.customerId,
+        vehicleId: fullAppointment.vehicleId,
+        mechanicId: fullAppointment.mechanicId,
+        serviceId: fullAppointment.serviceId,
+        scheduledDate: fullAppointment.scheduledDate,
         problemDescription: noteValue,
-        status: appt.status
+        status: fullAppointment.status
       });
       setEditingNote(null);
       setNoteValue('');

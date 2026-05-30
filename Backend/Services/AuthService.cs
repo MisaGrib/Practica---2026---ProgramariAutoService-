@@ -34,17 +34,23 @@ public class AuthService : IAuthService
     public async Task<LoginResponseDto?> LoginAsync(LoginRequestDto loginRequest)
     {
         var passwordHash = HashPassword(loginRequest.Password);
+        var normalizedEmail = loginRequest.Email.Trim();
 
         var user = await _context.Users
             .Include(u => u.Role)
             .FirstOrDefaultAsync(u =>
-                u.Email == loginRequest.Email &&
-                u.PasswordHash == passwordHash &&
+                u.Email == normalizedEmail &&
                 u.IsActive == true);
 
-        if (user == null)
+        if (user == null || (user.PasswordHash != passwordHash && user.PasswordHash != loginRequest.Password))
         {
             return null;
+        }
+
+        if (user.PasswordHash == loginRequest.Password)
+        {
+            user.PasswordHash = passwordHash;
+            await _context.SaveChangesAsync();
         }
 
         var token = _jwtService.GenerateToken(user.Email, user.Role.Name);
@@ -126,10 +132,9 @@ public class AuthService : IAuthService
         var user = await _context.Users
             .FirstOrDefaultAsync(u =>
                 u.Email == changePasswordRequest.Email &&
-                u.PasswordHash == oldPasswordHash &&
                 u.IsActive == true);
 
-        if (user == null)
+        if (user == null || (user.PasswordHash != oldPasswordHash && user.PasswordHash != changePasswordRequest.OldPassword))
         {
             return false;
         }
