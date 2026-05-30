@@ -5,7 +5,7 @@ using Microsoft.AspNetCore.Authorization;
 
 [ApiController]
 [Route("api/[controller]")]
-[Authorize(Roles = "Admin,Mecanic")]
+[Authorize]
 public class MechanicController : ControllerBase
 {
     private readonly IMechanicService _mechanicService;
@@ -16,7 +16,6 @@ public class MechanicController : ControllerBase
     }
 
     [HttpGet]
-    [Authorize(Roles = "Admin")]
     public async Task<IActionResult> GetAll()
     {
         var mechanics = await _mechanicService.GetAllMechanicsAsync();

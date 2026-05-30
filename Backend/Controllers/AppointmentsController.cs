@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore;
 
 [ApiController]
 [Route("api/[controller]")]
-[Authorize(Roles = "Admin, Client, Mecanic")]
+[Authorize(Roles = "Admin,Client,Mecanic")]
 
 public class AppointmentsController : ControllerBase
 {

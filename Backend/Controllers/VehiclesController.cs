@@ -5,7 +5,7 @@ using Microsoft.AspNetCore.Authorization;
 
 [ApiController]
 [Route("api/[controller]")]
-[Authorize(Roles = "Admin, Client")]
+[Authorize(Roles = "Admin,Client")]
 
 public class VehiclesController : ControllerBase
 {

@@ -5,7 +5,7 @@ using Microsoft.AspNetCore.Authorization;
 
 [ApiController]
 [Route("api/[controller]")]
-[Authorize(Roles = "Admin")]
+[Authorize]
 
 public class ServicesController : ControllerBase
 {
@@ -50,6 +50,7 @@ public class ServicesController : ControllerBase
     }
 
     [HttpPost]
+    [Authorize(Roles = "Admin")]
     public async Task<IActionResult> Create([FromBody] Service newService)
     {
         if(newService == null)
@@ -63,6 +64,7 @@ public class ServicesController : ControllerBase
     }
 
     [HttpPut("{id}")]
+    [Authorize(Roles = "Admin")]
     public async Task<IActionResult> Update(int id, [FromBody] Service updatedService)
     {
         if(updatedService == null)
@@ -81,6 +83,7 @@ public class ServicesController : ControllerBase
     }
 
     [HttpDelete("{id}")]
+    [Authorize(Roles = "Admin")]
     public async Task<IActionResult> Delete(int id)
     {
         var isDeleted = await _servicesService.DeleteServiceAsync(id);

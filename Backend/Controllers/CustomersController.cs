@@ -5,7 +5,7 @@ using Microsoft.AspNetCore.Authorization;
 
 [ApiController]
 [Route("api/[controller]")]
-[Authorize(Roles = "Admin")]
+[Authorize]
 
 public class CustomerController : ControllerBase
 {
@@ -17,13 +17,15 @@ public class CustomerController : ControllerBase
     }
 
     [HttpGet]
+    [Authorize(Roles = "Admin")]
     public async Task<IActionResult> GetAll()
     {
         var customers = await _customerService.GetAllCustomersAsync();
         return Ok(customers);
     }
 
-     [HttpGet("{id}")]
+    [HttpGet("{id}")]
+    [Authorize(Roles = "Admin")]
     public async Task<IActionResult> GetCustomerById(int id)
     {
         var customer = await _customerService.GetCustomerByIdAsync(id);
@@ -37,6 +39,7 @@ public class CustomerController : ControllerBase
     }
 
     [HttpGet("email/{email}")]
+    [Authorize(Roles = "Admin,Client")]
     public async Task<IActionResult> GetCustomerByEmail(string email)
     {
         var customer = await _customerService.GetCustomerByEmailAsync(email);
@@ -50,9 +53,10 @@ public class CustomerController : ControllerBase
     }
 
     [HttpPost]
+    [Authorize(Roles = "Admin")]
     public async Task<IActionResult> Create([FromBody] Customer newCustomer)
     {
-        if(newCustomer == null)
+        if (newCustomer == null)
         {
             return BadRequest("Datele nu pot fi nule.");
         }
@@ -65,13 +69,14 @@ public class CustomerController : ControllerBase
 
         var createdCustomer = await _customerService.CreateCustomerAsync(newCustomer);
 
-        return CreatedAtAction(nameof(GetCustomerById), new{id = createdCustomer.Id}, createdCustomer);
+        return CreatedAtAction(nameof(GetCustomerById), new { id = createdCustomer.Id }, createdCustomer);
     }
 
     [HttpPut("{id}")]
+    [Authorize(Roles = "Admin")]
     public async Task<IActionResult> Update(int id, [FromBody] Customer updatedCustomer)
     {
-      if(updatedCustomer == null)
+        if (updatedCustomer == null)
         {
             return BadRequest("Datele nu pot fi nule.");
         }
@@ -93,6 +98,7 @@ public class CustomerController : ControllerBase
     }
 
     [HttpDelete("{id}")]
+    [Authorize(Roles = "Admin")]
     public async Task<IActionResult> Delete(int id)
     {
         var isDeleted = await _customerService.DeleteCustomerAsync(id);

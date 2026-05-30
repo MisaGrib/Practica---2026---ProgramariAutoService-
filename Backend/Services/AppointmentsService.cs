@@ -298,6 +298,19 @@ public class AppointmentsService : IAppointmentsService
             return false;
         }
 
+        if (status == "Anulat")
+        {
+            if (existingAppointment.Status == "Complet" || existingAppointment.Status == "Anulat")
+            {
+                throw new InvalidOperationException("Nu poți anula o programare deja finalizată sau anulată.");
+            }
+
+            if (DateTime.Now.AddHours(2) > existingAppointment.ScheduledDate)
+            {
+                throw new InvalidOperationException("Anularea programării trebuie făcută cu cel puțin 2 ore înainte de ora programată.");
+            }
+        }
+
         if ((status == "În progres" || status == "Complet") && DateTime.Now < existingAppointment.ScheduledDate)
         {
             throw new InvalidOperationException("Statusul nu poate fi schimbat la 'În progres' sau 'Complet' înainte de data programată.");
