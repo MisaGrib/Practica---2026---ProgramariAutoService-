@@ -93,7 +93,16 @@ const [vehicleLoading, setVehicleLoading] = useState(false);
   const filteredAppointments = useMemo(() => {
     return appointments
       .filter(a => apptFilter === 'Toate' || a.status === apptFilter)
-      .filter(a => !apptSearch || a.serviceName?.toLowerCase().includes(apptSearch.toLowerCase()) || a.appointmentCode?.toLowerCase().includes(apptSearch.toLowerCase()))
+      .filter(a => {
+        if (!apptSearch) return true;
+        const search = apptSearch.toLowerCase();
+        const appointmentDate = a.scheduledDate ? formatAppointmentSearchDate(new Date(a.scheduledDate)) : '';
+        return a.serviceName?.toLowerCase().includes(search)
+          || a.appointmentCode?.toLowerCase().includes(search)
+          || a.mechanic?.toLowerCase().includes(search)
+          || a.licensePlate?.toLowerCase().includes(search)
+          || appointmentDate.includes(search);
+      })
       .sort((a, b) => new Date(b.scheduledDate) - new Date(a.scheduledDate));
   }, [appointments, apptFilter, apptSearch]);
 
@@ -133,8 +142,44 @@ const [vehicleLoading, setVehicleLoading] = useState(false);
     return slots;
   };
 
+  const formatAppointmentSearchDate = date => {
+    if (!date || Number.isNaN(new Date(date).getTime())) return '';
+    const d = new Date(date);
+    const day = String(d.getDate()).padStart(2, '0');
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const year = d.getFullYear();
+    const hours = String(d.getHours()).padStart(2, '0');
+    const minutes = String(d.getMinutes()).padStart(2, '0');
+    return `${day}.${month}.${year} ${hours}:${minutes} ${year}-${month}-${day}`;
+  };
+
+  const getAvailableBookingSlots = (dateValue, service, mechanicId) => {
+    const slots = getAvailableTimeSlots(dateValue, service);
+    if (!dateValue || !service || !mechanicId) return slots;
+    const mechanic = mechanics.find(m => String(m.id) === String(mechanicId));
+    if (!mechanic) return slots;
+    const mechanicName = `${mechanic.firstName} ${mechanic.lastName}`.toLowerCase();
+    const occupied = appointments
+      .filter(a => a.status !== 'Anulat' && a.mechanic?.toLowerCase() === mechanicName)
+      .filter(a => toInputDateOnly(a.scheduledDate) === dateValue)
+      .map(a => {
+        const start = new Date(a.scheduledDate);
+        const duration = getServiceDuration({ name: a.serviceName, price: a.servicePrice });
+        return {
+          start,
+          end: new Date(start.getTime() + duration * 60000)
+        };
+      });
+    const duration = getServiceDuration(service);
+    return slots.filter(time => {
+      const start = new Date(`${dateValue}T${time}`);
+      const end = new Date(start.getTime() + duration * 60000);
+      return !occupied.some(slot => start < slot.end && slot.start < end);
+    });
+  };
+
   const selectedService = services.find(s => String(s.id) === String(bookingForm.serviceId));
-  const availableSlots = getAvailableTimeSlots(bookingForm.appointmentDate, selectedService);
+  const availableSlots = getAvailableBookingSlots(bookingForm.appointmentDate, selectedService, bookingForm.mechanicId);
   const selectedTime = bookingForm.scheduledDate ? bookingForm.scheduledDate.split('T')[1]?.slice(0, 5) : '';
 
   const openBooking = (vehicleId = '', serviceId = '') => {
@@ -154,7 +199,7 @@ const [vehicleLoading, setVehicleLoading] = useState(false);
   };
 
   const handleTimeChange = value => {
-    setBookingForm(prev => ({ ...prev, scheduledDate: bookingForm.appointmentDate && value ? `${bookingForm.appointmentDate}T${value}` : '' }));
+    setBookingForm(prev => ({ ...prev, scheduledDate: prev.appointmentDate && value ? `${prev.appointmentDate}T${value}` : '' }));
   };
 
   const submitBooking = async () => {
@@ -335,7 +380,7 @@ const [vehicleLoading, setVehicleLoading] = useState(false);
       <div style={{ background: '#fff', border: '1px solid #e5e7eb', borderRadius: 12, overflow: 'hidden', marginBottom: 16 }}>
         <div style={{ padding: '12px 18px', borderBottom: '1px solid #f1f5f9', display: 'flex', alignItems: 'center', gap: 10 }}>
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="2"><circle cx="11" cy="11" r="8" /><path d="m21 21-4.35-4.35" /></svg>
-          <input value={apptSearch} onChange={e => setApptSearch(e.target.value)} placeholder="Caută serviciu sau cod..." style={{ border: 'none', outline: 'none', fontSize: 14, width: '100%', background: 'transparent', color: '#1a1a2e' }} />
+          <input value={apptSearch} onChange={e => setApptSearch(e.target.value)} placeholder="Caută serviciu, cod, mecanic sau dată..." style={{ border: 'none', outline: 'none', fontSize: 14, width: '100%', background: 'transparent', color: '#1a1a2e' }} />
           {apptSearch && <span onClick={() => setApptSearch('')} style={{ cursor: 'pointer', color: '#94a3b8', fontSize: 20 }}>×</span>}
         </div>
         {filteredAppointments.length === 0 ? (

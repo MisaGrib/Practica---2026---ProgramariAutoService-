@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../api/axios';
 
@@ -44,6 +44,17 @@ const Field = ({ label, icon, type, placeholder, value, onChange, extra }) => (
 );
 
 export default function Register() {
+  function useIsMobile() {
+    const [isMobile, setIsMobile] = useState(window.innerWidth < 720);
+    useEffect(() => {
+      const onResize = () => setIsMobile(window.innerWidth < 720);
+      window.addEventListener('resize', onResize);
+      return () => window.removeEventListener('resize', onResize);
+    }, []);
+    return isMobile;
+  }
+
+  const isMobile = useIsMobile();
   const navigate = useNavigate();
 
   const [firstName, setFirstName] = useState('');
@@ -101,14 +112,15 @@ export default function Register() {
 
 
   return (
-    <div style={{ display: 'flex', minHeight: '100vh', fontFamily: 'Segoe UI, sans-serif' }}>
+    <div style={{ display: 'flex', minHeight: '100vh', fontFamily: 'Segoe UI, sans-serif', flexDirection: isMobile ? 'column' : 'row' }}>
 
       {/* STANGA */}
       <div style={{
         flex: 1,
+        display: isMobile ? 'none' : 'flex',
         backgroundImage: 'linear-gradient(rgba(0,0,0,0.6), rgba(0,0,0,0.6)), url(https://images.unsplash.com/photo-1544636331-e26879cd4d9b?w=1200&q=90)',
         backgroundSize: 'cover', backgroundPosition: 'center',
-        display: 'flex', flexDirection: 'column',
+        flexDirection: 'column',
         justifyContent: 'space-between', padding: '40px 50px'
       }}>
         {/* Logo */}
@@ -141,14 +153,14 @@ export default function Register() {
 
       {/* DREAPTA */}
       <div style={{
-        width: 520, display: 'flex', flexDirection: 'column',
-        justifyContent: 'flex-start', padding: '50px', background: '#fff',
+        width: isMobile ? '100%' : 520, display: 'flex', flexDirection: 'column',
+        justifyContent: 'flex-start', padding: isMobile ? '20px' : '50px', background: '#fff',
         overflowY: 'auto'
       }}>
 
        
 
-        <h2 style={{ fontSize: 28, fontWeight: 900, marginBottom: 6, marginLeft: 120 }}>Creare cont</h2>
+        <h2 style={{ fontSize: isMobile ? 22 : 28, fontWeight: 900, marginBottom: 6, marginLeft: isMobile ? 0 : 120, textAlign: isMobile ? 'center' : 'left' }}>Creare cont</h2>
         <p style={{ color: '#888', fontSize: 14, marginBottom: 24, letterSpacing: 0.5 }}>
           Completează formularul de mai jos cu datele tale
         </p>

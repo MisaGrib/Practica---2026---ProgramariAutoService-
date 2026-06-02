@@ -103,7 +103,10 @@ export default function AdminDashboard() {
   const filtered = useMemo(() => {
     const q = key => searches[key]?.toLowerCase() || '';
     return {
-      appointments: data.appointmentDetails.filter(a => !q('appointments') || a.appointmentCode?.toLowerCase().includes(q('appointments')) || a.customer?.toLowerCase().includes(q('appointments')) || a.mechanic?.toLowerCase().includes(q('appointments')) || a.serviceName?.toLowerCase().includes(q('appointments')) || a.status?.toLowerCase().includes(q('appointments'))),
+      appointments: data.appointmentDetails.filter(a => {
+        const dateText = formatDate(a.scheduledDate).toLowerCase();
+        return !q('appointments') || a.appointmentCode?.toLowerCase().includes(q('appointments')) || a.customer?.toLowerCase().includes(q('appointments')) || a.mechanic?.toLowerCase().includes(q('appointments')) || a.serviceName?.toLowerCase().includes(q('appointments')) || a.status?.toLowerCase().includes(q('appointments')) || dateText.includes(q('appointments'));
+      }),
       mechanics: data.mechanics.filter(m => !q('mechanics') || `${m.firstName} ${m.lastName}`.toLowerCase().includes(q('mechanics')) || m.email?.toLowerCase().includes(q('mechanics')) || m.phone?.includes(q('mechanics'))),
       customers: data.customers.filter(c => !q('customers') || `${c.firstName} ${c.lastName}`.toLowerCase().includes(q('customers')) || c.email?.toLowerCase().includes(q('customers')) || c.phone?.includes(q('customers'))),
       vehicles: data.vehicleDetails.filter(v => !q('vehicles') || v.licensePlate?.toLowerCase().includes(q('vehicles')) || v.brand?.toLowerCase().includes(q('vehicles')) || v.model?.toLowerCase().includes(q('vehicles')) || v.customer?.toLowerCase().includes(q('vehicles'))),
@@ -129,13 +132,17 @@ export default function AdminDashboard() {
     return 90;
   };
 
-  const isWithinWorkingHours = (date, durationMinutes) => {
-    const day = date.getDay();
-    if (day === 0) return false;
-    const startMinutes = date.getHours() * 60 + date.getMinutes();
-    const endMinutes = startMinutes + durationMinutes;
-    if (day === 6) return startMinutes >= 9 * 60 && endMinutes <= 14 * 60;
-    return startMinutes >= 8 * 60 && endMinutes <= 18 * 60;
+  function ScrollTable({ headers, children, isMobile }) {
+    return (
+      <div style={{ overflowX: 'auto', maxHeight: 420, overflowY: 'auto' }}>
+        <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: (isMobile ? 320 : 500) }}>
+          <thead style={{ position: 'sticky', top: 0, zIndex: 1 }}>
+            <tr>{headers.map(h => <Th key={h}>{h}</Th>)}</tr>
+          </thead>
+          <tbody>{children}</tbody>
+        </table>
+      </div>
+    );
   };
 
   const hasMechanicScheduleConflict = (scheduledDate, durationMinutes, mechanicId, appointments, services, excludeId = null) => {
@@ -266,7 +273,7 @@ export default function AdminDashboard() {
           <StatCard icon={<UsersIcon />} title="Clienți" value={stats.customers} accent="#f97316" />
         </div>
         <Panel title="Ultimele 5 programări">
-          <ScrollTable headers={['Cod / Serviciu', 'Client', 'Data', 'Status']}>
+          <ScrollTable isMobile={isMobile} headers={['Cod / Serviciu', 'Client', 'Data', 'Status']}>
             {recent.map(a => (
               <tr key={a.id}>
                 <Td><b>{a.serviceName}</b><div style={muted}>{a.appointmentCode}</div></Td>
@@ -308,7 +315,7 @@ export default function AdminDashboard() {
 
   const renderTable = section => {
     if (section === 'appointments') return (
-      <ScrollTable headers={['Cod', 'Client', 'Mecanic', 'Data', 'Status', 'Acțiuni']}>
+      <ScrollTable isMobile={isMobile} headers={['Cod', 'Client', 'Mecanic', 'Data', 'Status', 'Acțiuni']}>
         {filtered.appointments.map(a => <tr key={a.id}>
           <Td><b>{a.appointmentCode}</b><div style={muted}>{a.serviceName}</div></Td>
           <Td>{a.customer}</Td><Td>{a.mechanic}</Td>
@@ -319,7 +326,7 @@ export default function AdminDashboard() {
       </ScrollTable>
     );
     if (section === 'mechanics') return (
-      <ScrollTable headers={['Nume', 'Telefon', 'Email', 'Acțiuni']}>
+      <ScrollTable isMobile={isMobile} headers={['Nume', 'Telefon', 'Email', 'Acțiuni']}>
         {filtered.mechanics.map(m => <tr key={m.id}>
           <Td>{m.firstName} {m.lastName}</Td><Td>{m.phone}</Td><Td>{m.email}</Td>
           <Td><Actions onEdit={() => edit('mechanics', m)} onDelete={() => remove('mechanics', m.id)} /></Td>
@@ -327,7 +334,7 @@ export default function AdminDashboard() {
       </ScrollTable>
     );
     if (section === 'customers') return (
-      <ScrollTable headers={['Nume', 'Telefon', 'Email', 'Acțiuni']}>
+      <ScrollTable isMobile={isMobile} headers={['Nume', 'Telefon', 'Email', 'Acțiuni']}>
         {filtered.customers.map(c => <tr key={c.id}>
           <Td>{c.firstName} {c.lastName}</Td><Td>{c.phone}</Td><Td>{c.email}</Td>
           <Td><Actions onEdit={() => edit('customers', c)} onDelete={() => remove('customers', c.id)} /></Td>
@@ -335,7 +342,7 @@ export default function AdminDashboard() {
       </ScrollTable>
     );
     if (section === 'vehicles') return (
-      <ScrollTable headers={['Număr', 'Marcă / Model', 'Client', 'Acțiuni']}>
+      <ScrollTable isMobile={isMobile} headers={['Număr', 'Marcă / Model', 'Client', 'Acțiuni']}>
         {filtered.vehicles.map(v => <tr key={v.id}>
           <Td>{v.licensePlate}</Td>
           <Td>{v.brand} {v.model}<div style={muted}>{v.series}</div></Td>
@@ -345,7 +352,7 @@ export default function AdminDashboard() {
       </ScrollTable>
     );
     if (section === 'services') return (
-      <ScrollTable headers={['Denumire', 'Descriere', 'Preț', 'Acțiuni']}>
+      <ScrollTable isMobile={isMobile} headers={['Denumire', 'Descriere', 'Preț', 'Acțiuni']}>
         {filtered.services.map(s => <tr key={s.id}>
           <Td>{s.name}</Td><Td>{s.description}</Td>
           <Td>{Number(s.price).toLocaleString('ro-MD')} MDL</Td>
@@ -354,7 +361,7 @@ export default function AdminDashboard() {
       </ScrollTable>
     );
     if (section === 'payments') return (
-      <ScrollTable headers={['Programare', 'Data', 'Tip', 'Sumă', 'Acțiuni']}>
+      <ScrollTable isMobile={isMobile} headers={['Programare', 'Data', 'Tip', 'Sumă', 'Acțiuni']}>
         {filtered.payments.map(p => <tr key={p.id}>
           <Td>{p.appointmentCode}</Td><Td>{formatDate(p.paymentDate)}</Td>
           <Td>{p.paymentType}</Td><Td>{Number(p.amount).toLocaleString('ro-MD')} MDL</Td>
@@ -363,7 +370,7 @@ export default function AdminDashboard() {
       </ScrollTable>
     );
     if (section === 'users') return (
-      <ScrollTable headers={['Email', 'Rol', 'Activ', 'Acțiuni']}>
+      <ScrollTable isMobile={isMobile} headers={['Email', 'Rol', 'Activ', 'Acțiuni']}>
         {filtered.users.map(u => <tr key={u.id}>
           <Td style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
             <span style={{ width: 10, height: 10, borderRadius: '50%', background: u.isActive ? '#16a34a' : '#dc2626' }} />
@@ -603,7 +610,7 @@ function UserForm({ form, data, availableEmails, setField, save, resetForm, load
 
 const endpoints = { appointments: '/appointments', mechanics: '/mechanic', customers: '/customer', vehicles: '/vehicles', services: '/services', payments: '/payments', users: '/users' };
 const titles = { appointments: 'Programări', mechanics: 'Mecanici', customers: 'Clienți', vehicles: 'Vehicule', services: 'Servicii', payments: 'Plăți', users: 'Utilizatori' };
-const searchPlaceholders = { appointments: 'Caută după cod, client, mecanic, status...', mechanics: 'Caută după nume, email, telefon...', customers: 'Caută după nume, email, telefon...', vehicles: 'Caută după număr, marcă, model, client...', services: 'Caută după denumire sau descriere...', payments: 'Caută după cod programare sau tip plată...', users: 'Caută după email sau rol...' };
+const searchPlaceholders = { appointments: 'Caută după cod, client, mecanic, status sau dată...', mechanics: 'Caută după nume, email, telefon...', customers: 'Caută după nume, email, telefon...', vehicles: 'Caută după număr, marcă, model, client...', services: 'Caută după denumire sau descriere...', payments: 'Caută după cod programare sau tip plată...', users: 'Caută după email sau rol...' };
 
 function toPayload(section, form) {
   if (section === 'appointments') {
@@ -719,19 +726,6 @@ function Panel({ title, children }) {
     <div>
       <h2 style={{ fontSize: 18, fontWeight: 900, marginBottom: 14 }}>{title}</h2>
       <div style={{ background: '#fff', border: '1px solid #e5e7eb', borderRadius: 10, overflow: 'hidden' }}>{children}</div>
-    </div>
-  );
-}
-
-function ScrollTable({ headers, children }) {
-  return (
-    <div style={{ overflowX: 'auto', maxHeight: 420, overflowY: 'auto' }}>
-      <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: 500 }}>
-        <thead style={{ position: 'sticky', top: 0, zIndex: 1 }}>
-          <tr>{headers.map(h => <Th key={h}>{h}</Th>)}</tr>
-        </thead>
-        <tbody>{children}</tbody>
-      </table>
     </div>
   );
 }

@@ -1,8 +1,19 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../api/axios';
 
 export default function ForgotPassword() {
+  function useIsMobile() {
+    const [isMobile, setIsMobile] = useState(window.innerWidth < 720);
+    useEffect(() => {
+      const onResize = () => setIsMobile(window.innerWidth < 720);
+      window.addEventListener('resize', onResize);
+      return () => window.removeEventListener('resize', onResize);
+    }, []);
+    return isMobile;
+  }
+
+  const isMobile = useIsMobile();
   const navigate = useNavigate();
   const [email, setEmail] = useState('');
   const [newPassword, setNewPassword] = useState('');
@@ -69,14 +80,15 @@ export default function ForgotPassword() {
   );
 
   return (
-    <div style={{ display: 'flex', minHeight: '100vh', fontFamily: 'Segoe UI, sans-serif' }}>
+    <div style={{ display: 'flex', minHeight: '100vh', fontFamily: 'Segoe UI, sans-serif', flexDirection: isMobile ? 'column' : 'row' }}>
 
       {/* STANGA */}
       <div style={{
         flex: 1,
+        display: isMobile ? 'none' : 'flex',
         backgroundImage: 'linear-gradient(rgba(0,0,0,0.6), rgba(0,0,0,0.6)), url(https://images.unsplash.com/photo-1544636331-e26879cd4d9b?w=1200&q=90)',
         backgroundSize: 'cover', backgroundPosition: 'center',
-        display: 'flex', flexDirection: 'column',
+        flexDirection: 'column',
         justifyContent: 'space-between', padding: '40px 50px'
       }}>
         {/* Logo */}
@@ -111,14 +123,15 @@ export default function ForgotPassword() {
 
       {/* DREAPTA */}
       <div style={{
-        width: 500, display: 'flex', flexDirection: 'column',
-        justifyContent: 'center', padding: '60px 50px', background: '#fff'
+        width: isMobile ? '100%' : 500, display: 'flex', flexDirection: 'column',
+        justifyContent: 'center', padding: isMobile ? '20px' : '60px 50px', background: '#fff'
       }}>
 
         <button onClick={() => step === 1 ? navigate('/login') : setStep(1)} style={{
           background: 'none', border: 'none', color: '#2563eb', cursor: 'pointer',
-          fontSize: 14, marginBottom: 36, textAlign: 'left',
-          display: 'flex', alignItems: 'center', gap: 6, fontWeight: 600
+          fontSize: 14, marginBottom: 36, textAlign: isMobile ? 'center' : 'left',
+          display: 'flex', alignItems: 'center', gap: 6, fontWeight: 600,
+          justifyContent: isMobile ? 'center' : 'flex-start'
         }}>
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#2563eb" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
             <path d="M19 12H5M12 5l-7 7 7 7"/>

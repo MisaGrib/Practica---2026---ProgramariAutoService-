@@ -1,9 +1,20 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import api from '../api/axios';
 
 export default function Login() {
+  function useIsMobile() {
+    const [isMobile, setIsMobile] = useState(window.innerWidth < 720);
+    useEffect(() => {
+      const onResize = () => setIsMobile(window.innerWidth < 720);
+      window.addEventListener('resize', onResize);
+      return () => window.removeEventListener('resize', onResize);
+    }, []);
+    return isMobile;
+  }
+
+  const isMobile = useIsMobile();
   const navigate = useNavigate();
   const { login } = useAuth();
 
@@ -44,13 +55,13 @@ export default function Login() {
   };
 
   return (
-    <div style={{ display: 'flex', minHeight: '100vh', fontFamily: 'Segoe UI, sans-serif' }}>
+    <div style={{ display: 'flex', minHeight: '100vh', fontFamily: 'Segoe UI, sans-serif', flexDirection: isMobile ? 'column' : 'row' }}>
       <div style={{
         flex: 1,
+        display: isMobile ? 'none' : 'flex',
         backgroundImage: 'linear-gradient(rgba(0,0,0,0.6), rgba(0,0,0,0.6)), url(https://images.unsplash.com/photo-1544636331-e26879cd4d9b?w=1200&q=90)',
         backgroundSize: 'cover',
         backgroundPosition: 'center',
-        display: 'flex',
         flexDirection: 'column',
         justifyContent: 'space-between',
         padding: '40px 50px'
@@ -98,17 +109,19 @@ export default function Login() {
       </div>
 
       <div style={{
-        width: 480,
+        width: isMobile ? '100%' : 480,
         display: 'flex',
+        position: 'relative',
         flexDirection: 'column',
         justifyContent: 'center',
-        padding: '60px 50px',
+        padding: isMobile ? '20px' : '60px 50px',
         background: '#fff'
       }}>
         <button onClick={() => navigate('/')} style={{
-  position: 'fixed',
-  top: 24,
-  right: 32,
+  position: isMobile ? 'absolute' : 'fixed',
+  top: isMobile ? 12 : 24,
+  left: isMobile ? 12 : 'auto',
+  right: isMobile ? 'auto' : 32,
   zIndex: 10,
   background: 'none',
   border: 'none',
@@ -126,7 +139,7 @@ export default function Login() {
   Înapoi Acasă
 </button>
 
-        <h2 style={{ fontSize: 30, fontWeight: 900, marginBottom: 10, textAlign: 'center' }}>
+        <h2 style={{ fontSize: isMobile ? 24 : 30, fontWeight: 900, marginBottom: 10, textAlign: 'center' }}>
           Autentificare
         </h2>
 
