@@ -159,6 +159,20 @@ export default function AdminDashboard() {
       });
   };
 
+  const hasVehicleScheduleConflict = (scheduledDate, durationMinutes, vehicleId, appointments, services, excludeId = null) => {
+    const newStart = new Date(scheduledDate);
+    const newEnd = new Date(newStart.getTime() + durationMinutes * 60000);
+    return appointments
+      .filter(a => String(a.vehicleId) === String(vehicleId) && a.status !== 'Anulat' && (!excludeId || a.id !== excludeId))
+      .some(a => {
+        const existingStart = new Date(a.scheduledDate);
+        const service = services.find(s => s.id === a.serviceId);
+        const dur = getServiceDurationMinutes(service);
+        const existingEnd = new Date(existingStart.getTime() + dur * 60000);
+        return newStart < existingEnd && existingStart < newEnd;
+      });
+  };
+
   const setField = (section, field, value) => {
     if ((section === 'mechanics' || section === 'customers') && field === 'phone') value = normalizePhone(value);
     setForms(prev => ({ ...prev, [section]: { ...prev[section], [field]: value } }));
@@ -203,8 +217,12 @@ export default function AdminDashboard() {
         setError('Vehiculul selectat nu aparține clientului ales.');
         return false;
       }
-      if (dateChanged && hasMechanicScheduleConflict(scheduled, getServiceDurationMinutes(service), form.mechanicId, data.appointments, data.services, form.id)) {
+      if (hasMechanicScheduleConflict(scheduled, getServiceDurationMinutes(service), form.mechanicId, data.appointments, data.services, form.id)) {
         setError('Mecanicul nu este liber în acest interval. Alege o altă oră sau un alt mecanic.');
+        return false;
+      }
+      if (hasVehicleScheduleConflict(scheduled, getServiceDurationMinutes(service), form.vehicleId, data.appointments, data.services, form.id)) {
+        setError('Vehiculul nu este liber în acest interval. Alege o altă oră sau un alt vehicul.');
         return false;
       }
     }

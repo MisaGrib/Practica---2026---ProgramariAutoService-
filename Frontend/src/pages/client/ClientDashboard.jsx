@@ -153,33 +153,49 @@ const [vehicleLoading, setVehicleLoading] = useState(false);
     return `${day}.${month}.${year} ${hours}:${minutes} ${year}-${month}-${day}`;
   };
 
-  const getAvailableBookingSlots = (dateValue, service, mechanicId) => {
+  const getAvailableBookingSlots = (dateValue, service, mechanicId, vehicleId) => {
     const slots = getAvailableTimeSlots(dateValue, service);
-    if (!dateValue || !service || !mechanicId) return slots;
+    if (!dateValue || !service || !mechanicId || !vehicleId) return slots;
     const mechanic = mechanics.find(m => String(m.id) === String(mechanicId));
     if (!mechanic) return slots;
     const mechanicName = `${mechanic.firstName} ${mechanic.lastName}`.toLowerCase();
-    const occupied = appointments
+    const duration = getServiceDuration(service);
+
+    const occupiedByMechanic = appointments
       .filter(a => a.status !== 'Anulat' && a.mechanic?.toLowerCase() === mechanicName)
       .filter(a => toInputDateOnly(a.scheduledDate) === dateValue)
       .map(a => {
         const start = new Date(a.scheduledDate);
-        const duration = getServiceDuration({ name: a.serviceName, price: a.servicePrice });
+        const existingDuration = getServiceDuration({ name: a.serviceName, price: a.servicePrice });
         return {
           start,
-          end: new Date(start.getTime() + duration * 60000)
+          end: new Date(start.getTime() + existingDuration * 60000)
         };
       });
-    const duration = getServiceDuration(service);
+
+    const occupiedByVehicle = appointments
+      .filter(a => a.status !== 'Anulat' && String(a.vehicleId) === String(vehicleId))
+      .filter(a => toInputDateOnly(a.scheduledDate) === dateValue)
+      .map(a => {
+        const start = new Date(a.scheduledDate);
+        const existingDuration = getServiceDuration({ name: a.serviceName, price: a.servicePrice });
+        return {
+          start,
+          end: new Date(start.getTime() + existingDuration * 60000)
+        };
+      });
+
     return slots.filter(time => {
       const start = new Date(`${dateValue}T${time}`);
       const end = new Date(start.getTime() + duration * 60000);
-      return !occupied.some(slot => start < slot.end && slot.start < end);
+      const mechanicConflict = occupiedByMechanic.some(slot => start < slot.end && slot.start < end);
+      const vehicleConflict = occupiedByVehicle.some(slot => start < slot.end && slot.start < end);
+      return !mechanicConflict && !vehicleConflict;
     });
   };
 
   const selectedService = services.find(s => String(s.id) === String(bookingForm.serviceId));
-  const availableSlots = getAvailableBookingSlots(bookingForm.appointmentDate, selectedService, bookingForm.mechanicId);
+  const availableSlots = getAvailableBookingSlots(bookingForm.appointmentDate, selectedService, bookingForm.mechanicId, bookingForm.vehicleId);
   const selectedTime = bookingForm.scheduledDate ? bookingForm.scheduledDate.split('T')[1]?.slice(0, 5) : '';
 
   const openBooking = (vehicleId = '', serviceId = '') => {
@@ -445,7 +461,7 @@ const [vehicleLoading, setVehicleLoading] = useState(false);
       licensePlate: vehicleForm.licensePlate,
       brand: vehicleForm.brand,
       model: vehicleForm.model,
-      series: vehicleForm.series || null,
+      series: vehicleForm.series ?? '',
       customerId: customer.id,
     });
     setShowVehicleForm(false);

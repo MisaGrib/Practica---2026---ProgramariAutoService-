@@ -118,6 +118,29 @@ public class AppointmentsService : IAppointmentsService
         return false;
     }
 
+    private async Task<bool> HasVehicleScheduleConflictAsync(int vehicleId, DateTime scheduledDate, int serviceId, int? excludeAppointmentId = null)
+    {
+        var duration = await GetServiceDurationMinutesAsync(serviceId);
+        var newEnd = scheduledDate.AddMinutes(duration);
+
+        var existingAppointments = await _context.Appointments
+            .Include(a => a.Service)
+            .Where(a => a.VehicleId == vehicleId && a.Id != excludeAppointmentId && a.Status != "Anulat")
+            .ToListAsync();
+
+        foreach (var existing in existingAppointments)
+        {
+            var existingDuration = existing.Service != null ? GetDurationMinutesForService(existing.Service) : 90;
+            var existingEnd = existing.ScheduledDate.AddMinutes(existingDuration);
+            if (IntervalsOverlap(scheduledDate, newEnd, existing.ScheduledDate, existingEnd))
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     private async Task ValidateAppointmentScheduleAsync(Appointment appointment, int? excludeAppointmentId = null)
     {
         if (appointment.CustomerId <= 0 || appointment.VehicleId <= 0 || appointment.MechanicId <= 0 || appointment.ServiceId <= 0)
@@ -159,6 +182,11 @@ public class AppointmentsService : IAppointmentsService
         if (await HasMechanicScheduleConflictAsync(appointment.MechanicId, appointment.ScheduledDate, appointment.ServiceId, excludeAppointmentId))
         {
             throw new InvalidOperationException("Mecanicul nu este liber în acest interval. Alege o altă oră sau un alt mecanic.");
+        }
+
+        if (await HasVehicleScheduleConflictAsync(appointment.VehicleId, appointment.ScheduledDate, appointment.ServiceId, excludeAppointmentId))
+        {
+            throw new InvalidOperationException("Vehiculul nu este liber în acest interval. Alege o altă oră sau un alt vehicul.");
         }
     }
 
