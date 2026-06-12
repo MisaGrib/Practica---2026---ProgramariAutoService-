@@ -62,7 +62,11 @@ builder.Services.AddCors(options =>
 {
     options.AddPolicy("ReactPolicy", policy =>
     {
-        policy.WithOrigins("http://localhost:5173", "http://localhost:3000", "http://127.0.0.1:5173")
+        policy.SetIsOriginAllowed(origin =>
+                origin == "http://localhost:5173" ||
+                origin == "http://localhost:3000" ||
+                origin == "http://127.0.0.1:5173" ||
+                origin.EndsWith(".vercel.app"))
               .AllowAnyHeader()
               .AllowAnyMethod();
     });
