@@ -81,6 +81,18 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+
+// Permite cereri de la origini publice (Vercel) catre adrese private/loopback (localhost)
+// - cerinta Chrome "Private Network Access"
+app.Use(async (context, next) =>
+{
+    if (context.Request.Method == "OPTIONS")
+    {
+        context.Response.Headers.Append("Access-Control-Allow-Private-Network", "true");
+    }
+    await next();
+});
+
 app.UseCors("ReactPolicy");
 
 app.UseAuthentication();
