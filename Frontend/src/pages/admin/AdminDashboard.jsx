@@ -132,6 +132,21 @@ export default function AdminDashboard() {
     return 90;
   };
 
+  const isWithinWorkingHours = (scheduledDate, durationMinutes) => {
+    const start = new Date(scheduledDate);
+    const end = new Date(start.getTime() + durationMinutes * 60000);
+    if (end.getDate() !== start.getDate() || end.getMonth() !== start.getMonth() || end.getFullYear() !== start.getFullYear()) {
+      return false;
+    }
+    const day = start.getDay();
+    if (day === 0) return false;
+    const opening = day === 6 ? 9 * 60 : 8 * 60;
+    const closing = day === 6 ? 14 * 60 : 18 * 60;
+    const startMinutes = start.getHours() * 60 + start.getMinutes();
+    const endMinutes = end.getHours() * 60 + end.getMinutes();
+    return startMinutes >= opening && endMinutes <= closing;
+  };
+
   function ScrollTable({ headers, children, isMobile }) {
     return (
       <div style={{ overflowX: 'auto', maxHeight: 420, overflowY: 'auto' }}>
