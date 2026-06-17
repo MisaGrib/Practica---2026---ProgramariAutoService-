@@ -6,6 +6,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
 using System.Text.Json.Serialization;
+using System.Text.RegularExpressions;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -63,9 +64,9 @@ builder.Services.AddCors(options =>
     options.AddPolicy("ReactPolicy", policy =>
     {
         policy.SetIsOriginAllowed(origin =>
-                origin == "http://localhost:5173" ||
-                origin == "http://localhost:3000" ||
-                origin == "http://127.0.0.1:5173" ||
+                // Accepta orice port de pe localhost/127.0.0.1 (util cand alt proiect
+                // ocupa portul implicit 5173 si Vite trece automat pe altul)
+                Regex.IsMatch(origin, @"^https?://(localhost|127\.0\.0\.1):\d+$") ||
                 origin.EndsWith(".vercel.app"))
               .AllowAnyHeader()
               .AllowAnyMethod();

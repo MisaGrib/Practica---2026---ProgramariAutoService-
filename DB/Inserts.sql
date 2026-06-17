@@ -19,6 +19,9 @@ GO
 
 
 -- USERS
+
+UPDATE Users SET Email = 'mihaigribincea10@gmail.com' WHERE Id = 1;
+
 INSERT INTO Users(Email, PasswordHash, RoleId)
 VALUES
 ('admin@autoservice.md', 'JAvlGPq9JyTdtvBO6x2llnRI1+gxwIyPqCKAn3THIKk=', 1),
